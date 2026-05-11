@@ -3,7 +3,11 @@
 import { use } from 'react';
 import { Play, Star, Clapperboard, Plus, Info } from 'lucide-react';
 
-export default function TitlePage({ params }: any) {
+export default function TitlePage({
+  params,
+}: {
+  params: Promise<{ source: string; id: string }>;
+}) {
   const { source, id } = use(params);
 
   const title = `StreamVerse Title #${decodeURIComponent(id)}`;
@@ -51,7 +55,7 @@ export default function TitlePage({ params }: any) {
                     title,
                     image: poster,
                     href: `/title/${source}/${encodeURIComponent(id)}`,
-                    progress: Math.floor(Math.random() * 60) + 10
+                    progress: Math.floor(Math.random() * 60) + 10,
                   };
                   localStorage.setItem('streamverse_continue', JSON.stringify([item, ...saved.filter((x: any) => x.id !== id)]));
                   alert('Adăugat în Continue Watching');
@@ -73,7 +77,7 @@ export default function TitlePage({ params }: any) {
                     source,
                     title,
                     image: poster,
-                    href: `/title/${source}/${encodeURIComponent(id)}`
+                    href: `/title/${source}/${encodeURIComponent(id)}`,
                   };
                   localStorage.setItem('streamverse_watchlist', JSON.stringify([item, ...saved.filter((x: any) => x.id !== id)]));
                   alert('Adăugat în Watchlist');
