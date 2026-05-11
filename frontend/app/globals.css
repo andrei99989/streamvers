@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { background: #0A0A0F; color: white; }
+body { min-height: 100vh; }
+.card-glow { box-shadow: 0 20px 80px rgba(106,76,255,.18); }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
