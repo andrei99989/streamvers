@@ -1,73 +1,91 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-const API = 'http://127.0.0.1:4000';
+const API =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  'http://127.0.0.1:4000';
 
 type SourceGroup = {
   source: string;
   items: any[];
 };
 
+const demoGroups: SourceGroup[] = [
+  {
+    source: 'demo',
+    items: [
+      {
+        id: 'demo-iron-man',
+        title: 'Iron Man',
+        subtitle: 'Demo Movie • 2008',
+        image: 'https://image.tmdb.org/t/p/w500/78lPtwv72eTNqFW9COBYI0dWDJa.jpg',
+      },
+      {
+        id: 'demo-naruto',
+        title: 'Naruto',
+        subtitle: 'Demo Anime • Series',
+        image: 'https://cdn.myanimelist.net/images/anime/13/17405.jpg',
+      },
+      {
+        id: 'demo-youtube',
+        title: 'Universal Player Demo',
+        subtitle: 'Demo Stream • YouTube',
+        image: null,
+      },
+    ],
+  },
+];
+
 export default function SearchClient() {
   const searchParams = useSearchParams();
   const [q, setQ] = useState('');
   const [groups, setGroups] = useState<SourceGroup[]>([]);
   const [loading, setLoading] = useState(false);
+  const [offline, setOffline] = useState(false);
+
+  const totalResults = useMemo(
+    () => groups.reduce((sum, group) => sum + group.items.length, 0),
+    [groups]
+  );
 
   async function searchWithQuery(value: string) {
-    if (!value.trim()) return;
+    const query = value.trim();
+    if (!query) return;
 
     setLoading(true);
+    setOffline(false);
 
     try {
       const [metadataRes, algoliaRes, deezerRes, wikipediaRes] = await Promise.allSettled([
-        fetch(`${API}/metadata/search?q=${encodeURIComponent(value)}`).then((r) => r.json()),
-        fetch(`${API}/algolia/search?q=${encodeURIComponent(value)}`).then((r) => r.json()),
-        fetch(`${API}/deezer/search?q=${encodeURIComponent(value)}`).then((r) => r.json()),
-        fetch(`${API}/wikipedia/search?q=${encodeURIComponent(value)}`).then((r) => r.json())
+        fetch(`${API}/metadata/search?q=${encodeURIComponent(query)}`).then((r) => r.json()),
+        fetch(`${API}/algolia/search?q=${encodeURIComponent(query)}`).then((r) => r.json()),
+        fetch(`${API}/deezer/search?q=${encodeURIComponent(query)}`).then((r) => r.json()),
+        fetch(`${API}/wikipedia/search?q=${encodeURIComponent(query)}`).then((r) => r.json()),
       ]);
 
       const nextGroups: SourceGroup[] = [];
 
       if (algoliaRes.status === 'fulfilled' && algoliaRes.value?.hits?.length) {
-        nextGroups.push({
-          source: 'algolia',
-          items: algoliaRes.value.hits
-        });
+        nextGroups.push({ source: 'algolia', items: algoliaRes.value.hits });
       }
 
-      if (deezerRes?.status === 'fulfilled' && deezerRes.value?.data?.length) {
-        nextGroups.push({
-          source: 'deezer',
-          items: deezerRes.value.data
-        });
+      if (deezerRes.status === 'fulfilled' && deezerRes.value?.data?.length) {
+        nextGroups.push({ source: 'deezer', items: deezerRes.value.data });
       }
 
-      if (wikipediaRes?.status === 'fulfilled' && wikipediaRes.value?.results?.length) {
-        nextGroups.push({
-          source: 'wikipedia',
-          items: wikipediaRes.value.results
-        });
+      if (wikipediaRes.status === 'fulfilled' && wikipediaRes.value?.results?.length) {
+        nextGroups.push({ source: 'wikipedia', items: wikipediaRes.value.results });
       }
 
-      if (wikipediaRes?.status === 'fulfilled' && wikipediaRes.value?.results?.length) {
-        nextGroups.push({
-          source: 'wikipedia',
-          items: wikipediaRes.value.results
-        });
-      }
-
-      if (metadataRes.status === 'fulfilled') {
+      if (metadataRes.status === 'fulfilled' && metadataRes.value) {
         Object.entries(metadataRes.value)
           .filter(([, items]) => Array.isArray(items) && items.length > 0)
           .forEach(([source, items]) => {
-            nextGroups.push({
-              source,
-              items: items as any[]
-            });
+            nextGroups.push({ source, items: items as any[] });
           });
       }
 
@@ -75,10 +93,15 @@ export default function SearchClient() {
         new Map(nextGroups.map((group) => [group.source, group])).values()
       );
 
-      setGroups(uniqueGroups);
+      if (uniqueGroups.length) {
+        setGroups(uniqueGroups);
+      } else {
+        setGroups(demoGroups);
+      }
     } catch (error) {
       console.error(error);
-      alert('Backend-ul nu răspunde. Verifică dacă API-ul rulează pe portul 4000.');
+      setOffline(true);
+      setGroups(demoGroups);
     }
 
     setLoading(false);
@@ -97,30 +120,53 @@ export default function SearchClient() {
   }, [searchParams]);
 
   return (
-    <section className="p-6 md:p-8">
-      <h1 className="text-4xl font-black md:text-5xl">Căutare Universală</h1>
+    <section className="min-h-screen bg-black p-6 text-white md:p-8">
+      <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-6 md:p-8">
+        <div className="max-w-4xl">
+          <div className="mb-4 inline-flex rounded-full bg-[#6A4CFF] px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
+            StreamVerse Search
+          </div>
 
-      <p className="mt-3 text-white/60">
-        Caută în Algolia, Neon/PostgreSQL, OMDb, TMDB, YouTube, TVMaze, Jikan,
-        Kitsu, iTunes, OpenLibrary, TheAudioDB, TheSportsDB și alte surse.
-      </p>
+          <h1 className="text-4xl font-black md:text-6xl">Căutare Universală</h1>
 
-      <div className="mt-6 flex gap-3">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && search()}
-          placeholder="Ex: YouTube, Naruto, Iron Man, Arsenal..."
-          className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none focus:border-[#6A4CFF]"
-        />
+          <p className="mt-4 text-white/60">
+            Caută filme, seriale, anime, muzică, YouTube, Wikipedia și surse metadata într-un singur loc.
+          </p>
+        </div>
 
-        <button onClick={search} className="rounded-2xl bg-[#6A4CFF] px-6 font-bold">
-          {loading ? '...' : 'Caută'}
-        </button>
+        <div className="mt-8 flex flex-col gap-3 md:flex-row">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && search()}
+            placeholder="Ex: Naruto, Iron Man, Arsenal, YouTube..."
+            className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-[#6A4CFF]"
+          />
+
+          <button
+            onClick={search}
+            disabled={loading}
+            className="rounded-2xl bg-[#6A4CFF] px-8 py-4 font-black disabled:opacity-60"
+          >
+            {loading ? 'Caută...' : 'Caută'}
+          </button>
+        </div>
+
+        {offline && (
+          <div className="mt-5 rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-4 text-sm text-yellow-100">
+            Backend-ul nu răspunde. Afișez rezultate demo până pornește API-ul.
+          </div>
+        )}
+
+        {totalResults > 0 && (
+          <div className="mt-5 text-sm text-white/50">
+            {totalResults} rezultate găsite în {groups.length} surse.
+          </div>
+        )}
       </div>
 
       {groups.length === 0 && !loading && (
-        <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+        <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
           Caută ceva pentru a vedea rezultate.
         </div>
       )}
@@ -154,7 +200,10 @@ function Block({ title, items, source }: any) {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
         {items.map((item: any, i: number) => {
           const card = normalizeItem(item, source);
-          const href = `/title/${source}/${encodeURIComponent(card.id || i)}`;
+          const href =
+            source === 'demo-youtube'
+              ? '/watch/demo'
+              : `/title/${source}/${encodeURIComponent(card.id || i)}`;
 
           return (
             <div
@@ -180,15 +229,16 @@ function Block({ title, items, source }: any) {
 
                 <div className="mt-1 text-xs text-white/50">{card.subtitle}</div>
 
-                <div className="mt-3 flex gap-2">
-                  <span className="rounded-full bg-black/30 px-3 py-1 text-xs">
-                    {source}
-                  </span>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-black/30 px-3 py-1 text-xs">{source}</span>
 
                   <button
                     onClick={() => {
                       const saved = JSON.parse(localStorage.getItem('streamverse_library') || '[]');
-                      localStorage.setItem('streamverse_library', JSON.stringify([...saved, card]));
+                      localStorage.setItem(
+                        'streamverse_library',
+                        JSON.stringify([card, ...saved.filter((x: any) => x.id !== card.id)])
+                      );
                       alert('Adăugat în Library');
                     }}
                     className="rounded-full bg-[#6A4CFF] px-3 py-1 text-xs font-bold"
@@ -206,12 +256,16 @@ function Block({ title, items, source }: any) {
 }
 
 function normalizeItem(item: any, source: string) {
+  if (source === 'demo') {
+    return item;
+  }
+
   if (source === 'algolia') {
     return {
       id: item.id || item.objectID,
       title: item.title || 'Algolia result',
       subtitle: `${item.type || 'custom'} • ${item.sourcesCount || 0} surse`,
-      image: item.poster || null
+      image: item.poster || null,
     };
   }
 
@@ -220,7 +274,7 @@ function normalizeItem(item: any, source: string) {
       id: item.imdbID,
       title: item.Title,
       subtitle: `${item.Year || ''} • ${item.Type || ''}`,
-      image: item.Poster && item.Poster !== 'N/A' ? item.Poster : null
+      image: item.Poster && item.Poster !== 'N/A' ? item.Poster : null,
     };
   }
 
@@ -229,7 +283,7 @@ function normalizeItem(item: any, source: string) {
       id: item.id,
       title: item.title || item.name || item.original_title || item.original_name,
       subtitle: `${item.media_type || ''} • ${item.release_date || item.first_air_date || ''}`,
-      image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null
+      image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
     };
   }
 
@@ -238,7 +292,7 @@ function normalizeItem(item: any, source: string) {
       id: item.id?.videoId,
       title: item.snippet?.title,
       subtitle: item.snippet?.channelTitle,
-      image: item.snippet?.thumbnails?.medium?.url
+      image: item.snippet?.thumbnails?.medium?.url,
     };
   }
 
@@ -248,7 +302,7 @@ function normalizeItem(item: any, source: string) {
       id: show.id,
       title: show.name,
       subtitle: `${show.type || ''} • ${show.premiered || ''}`,
-      image: show.image?.medium || show.image?.original
+      image: show.image?.medium || show.image?.original,
     };
   }
 
@@ -257,7 +311,7 @@ function normalizeItem(item: any, source: string) {
       id: item.mal_id,
       title: item.title_english || item.title,
       subtitle: `${item.type || ''} • ${item.year || item.aired?.string || ''}`,
-      image: item.images?.jpg?.image_url || item.images?.webp?.image_url
+      image: item.images?.jpg?.image_url || item.images?.webp?.image_url,
     };
   }
 
@@ -266,7 +320,7 @@ function normalizeItem(item: any, source: string) {
       id: item.id,
       title: item.attributes?.canonicalTitle,
       subtitle: `${item.attributes?.subtype || ''} • ${item.attributes?.startDate || ''}`,
-      image: item.attributes?.posterImage?.medium || item.attributes?.posterImage?.large
+      image: item.attributes?.posterImage?.medium || item.attributes?.posterImage?.large,
     };
   }
 
@@ -275,7 +329,7 @@ function normalizeItem(item: any, source: string) {
       id: item.pageid,
       title: item.title || 'Wikipedia result',
       subtitle: item.snippet ? item.snippet.replace(/<[^>]+>/g, '') : 'Wikipedia',
-      image: null
+      image: null,
     };
   }
 
@@ -284,7 +338,7 @@ function normalizeItem(item: any, source: string) {
       id: item.id,
       title: item.title || 'Deezer track',
       subtitle: `${item.artist?.name || ''} • ${item.album?.title || ''}`,
-      image: item.album?.cover_medium || item.album?.cover_big || item.artist?.picture_medium || null
+      image: item.album?.cover_medium || item.album?.cover_big || item.artist?.picture_medium || null,
     };
   }
 
@@ -292,6 +346,6 @@ function normalizeItem(item: any, source: string) {
     id: item.id || item.objectID || Math.random(),
     title: item.title || item.name || item.Title || 'Rezultat',
     subtitle: item.type || source,
-    image: item.image || item.poster || item.thumbnail || null
+    image: item.image || item.poster || item.thumbnail || null,
   };
 }
