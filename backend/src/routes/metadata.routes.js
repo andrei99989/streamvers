@@ -3,6 +3,26 @@ import { searchMetadata } from '../services/metadataService.js';
 
 const router = Router();
 
+async function findYoutubeTrailer(title, year = '') {
+  if (!process.env.YOUTUBE_API_KEY || !title) return null;
+
+  try {
+    const q = `${title} ${year} official trailer`;
+    const url =
+      `https://www.googleapis.com/youtube/v3/search` +
+      `?part=snippet&type=video&maxResults=1` +
+      `&q=${encodeURIComponent(q)}` +
+      `&key=${process.env.YOUTUBE_API_KEY}`;
+
+    const data = await fetch(url).then((r) => r.json());
+    const videoId = data.items?.[0]?.id?.videoId;
+
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch {
+    return null;
+  }
+}
+
 router.get('/search', async (req, res) => {
   const q = req.query.q;
   const data = await searchMetadata(q);
@@ -18,17 +38,22 @@ router.get('/title/:source/:id', async (req, res) => {
       const url = `https://api.themoviedb.org/3/movie/${decodedId}?api_key=${process.env.TMDB_API_KEY}&language=ro-RO`;
       const data = await fetch(url).then((r) => r.json());
 
+      const title = data.title || data.original_title || `TMDB #${decodedId}`;
+      const year = data.release_date?.slice(0, 4) || '';
+      const trailerUrl = await findYoutubeTrailer(title, year);
+
       return res.json({
         id: data.id || decodedId,
         source,
-        title: data.title || data.original_title || `TMDB #${decodedId}`,
+        title,
         description: data.overview || 'Descriere indisponibilă.',
-        year: data.release_date?.slice(0, 4) || '',
+        year,
         rating: data.vote_average || null,
-        runtime: data.runtime || null,
+        runtime: data.runtime ? `${data.runtime} min` : null,
         genres: data.genres?.map((g) => g.name) || [],
         poster: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : null,
         backdrop: data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : null,
+        trailerUrl,
       });
     }
 
@@ -36,24 +61,32 @@ router.get('/title/:source/:id', async (req, res) => {
       const url = `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${decodedId}`;
       const data = await fetch(url).then((r) => r.json());
 
+      const title = data.Title || `OMDb #${decodedId}`;
+      const year = data.Year || '';
+      const trailerUrl = await findYoutubeTrailer(title, year);
+
       return res.json({
         id: data.imdbID || decodedId,
         source,
-        title: data.Title || `OMDb #${decodedId}`,
+        title,
         description: data.Plot || 'Descriere indisponibilă.',
-        year: data.Year || '',
+        year,
         rating: data.imdbRating || null,
         runtime: data.Runtime || null,
         genres: data.Genre ? data.Genre.split(',').map((x) => x.trim()) : [],
         poster: data.Poster && data.Poster !== 'N/A' ? data.Poster : null,
         backdrop: null,
+        trailerUrl,
       });
     }
+
+    const title = decodedId.replaceAll('-', ' ');
+    const trailerUrl = await findYoutubeTrailer(title, '2025');
 
     return res.json({
       id: decodedId,
       source,
-      title: decodedId.replaceAll('-', ' '),
+      title,
       description: 'Titlu demo StreamVerse. Metadata reală va apărea când sursa este TMDB sau OMDb.',
       year: '2025',
       rating: '9.1',
@@ -61,6 +94,7 @@ router.get('/title/:source/:id', async (req, res) => {
       genres: ['Action', 'Drama'],
       poster: null,
       backdrop: null,
+      trailerUrl,
     });
   } catch (error) {
     console.error(error);

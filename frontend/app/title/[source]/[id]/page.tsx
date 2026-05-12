@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Play, Star, Plus, Info } from 'lucide-react';
 
 const API =
@@ -14,6 +15,7 @@ export default function TitlePage({
 }: {
   params: Promise<{ source: string; id: string }>;
 }) {
+  const router = useRouter();
   const { source, id } = use(params);
   const decodedId = decodeURIComponent(id);
 
@@ -104,8 +106,11 @@ export default function TitlePage({
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 onClick={() => {
-                  saveItem('streamverse_continue', { progress: Math.floor(Math.random() * 60) + 10 });
-                  alert('Adăugat în Continue Watching');
+                  saveItem('streamverse_continue', {
+                    progress: Math.floor(Math.random() * 60) + 10,
+                    trailerUrl: meta.trailerUrl,
+                  });
+                  router.push('/watch/demo');
                 }}
                 className="flex items-center gap-2 rounded-2xl bg-white px-6 py-4 font-black text-black"
               >
@@ -115,7 +120,6 @@ export default function TitlePage({
               <button
                 onClick={() => {
                   saveItem('streamverse_library');
-                  alert('Adăugat în Library');
                 }}
                 className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-bold"
               >
@@ -125,7 +129,6 @@ export default function TitlePage({
               <button
                 onClick={() => {
                   saveItem('streamverse_watchlist');
-                  alert('Adăugat în Watchlist');
                 }}
                 className="flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-bold"
               >
@@ -146,7 +149,7 @@ export default function TitlePage({
           <div className="aspect-video overflow-hidden rounded-2xl bg-black">
             <iframe
               className="h-full w-full"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+              src={meta.trailerUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ'}
               title="StreamVerse Player"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
