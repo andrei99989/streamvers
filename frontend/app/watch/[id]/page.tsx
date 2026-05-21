@@ -322,12 +322,18 @@ export default function WatchPage({
                                   div.className =
                                     'fallback-provider flex h-44 flex-col items-center justify-center bg-white/5 text-xs text-white/40';
 
-                                  div.innerHTML = `
-                                    <div style="font-size:32px">▶️</div>
-                                    <div style="margin-top:8px;font-weight:700;text-transform:uppercase">
-                                      ${rel.provider || rel.source_type || rel.type || 'source'}
-                                    </div>
-                                  `;
+                                  const icon = document.createElement('div');
+                                  icon.style.fontSize = '32px';
+                                  icon.textContent = '▶️';
+
+                                  const label = document.createElement('div');
+                                  label.style.marginTop = '8px';
+                                  label.style.fontWeight = '700';
+                                  label.style.textTransform = 'uppercase';
+                                  label.textContent = String(rel.provider || rel.source_type || rel.type || 'source');
+
+                                  div.appendChild(icon);
+                                  div.appendChild(label);
 
                                   parent.prepend(div);
                                 }

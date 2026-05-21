@@ -3,23 +3,23 @@
 ## Auth
 `POST /auth/register`
 ```json
-{"email":"user@example.com","password":"secret123","name":"Robert"}
+{"email":"user@domain.com","password":"secret123","name":"Robert"}
 ```
 
 `POST /auth/login`
 ```json
-{"email":"user@example.com","password":"secret123"}
+{"email":"user@domain.com","password":"secret123"}
 ```
 
 ## Upload
 `POST /upload/detect`
 ```json
-{"url":"https://example.com/video.m3u8"}
+{"url":"https://your-source-domain.com/video.m3u8"}
 ```
 
 `POST /upload`
 ```json
-{"title":"Film real","url":"https://your-real-source-url.com/video.mp4","isPrimary":true}
+{"title":"Film real","url":"https://your-source-domain.com/video.mp4","isPrimary":true}
 ```
 
 ## Stream
