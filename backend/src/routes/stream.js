@@ -1,10 +1,31 @@
 import { Router } from 'express';
-import Movie from '../models/Movie.js';
+import { query } from '../db/postgres.js';
+
 const router = Router();
+
 router.get('/:id', async (req, res) => {
-  const movie = await Movie.findById(req.params.id);
-  if (!movie) return res.status(404).json({ message: 'Not found' });
-  const primary = movie.sources.find(s => s.isPrimary) || movie.sources[0];
-  res.json({ movie, primary });
+  const result = await query(
+    `
+    SELECT
+      s.*,
+      c.title,
+      c.description,
+      c.poster,
+      c.backdrop,
+      c.type AS content_type,
+      c.metadata AS content_metadata
+    FROM sources s
+    LEFT JOIN contents c ON c.id = s.content_id
+    WHERE s.id = $1
+    `,
+    [req.params.id]
+  );
+
+  if (!result.rows[0]) {
+    return res.status(404).json({ error: 'Stream not found' });
+  }
+
+  res.json(result.rows[0]);
 });
+
 export default router;

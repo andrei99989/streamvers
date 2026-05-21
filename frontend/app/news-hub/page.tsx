@@ -1,9 +1,10 @@
 'use client';
+import { API } from '../../lib/api';
 
 import { useEffect, useState } from 'react';
 import { Newspaper, Film, Tv, Sparkles, Cpu } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 const tabs = [
   { id: 'movies', label: 'Movies', icon: <Film size={18} /> },

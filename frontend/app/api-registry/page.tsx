@@ -1,9 +1,10 @@
 'use client';
+import { API } from '../../lib/api';
 
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, CheckCircle2, KeyRound, Wrench, XCircle } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 export default function ApiRegistryPage() {
   const [items, setItems] = useState<any[]>([]);

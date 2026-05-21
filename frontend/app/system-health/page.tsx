@@ -1,9 +1,10 @@
 'use client';
+import { API } from '../../lib/api';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Activity, CheckCircle2, XCircle } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 const checks = [
   ['Health', '/health'],
@@ -28,7 +29,27 @@ const checks = [
 
 export default function SystemHealthPage() {
   const [results, setResults] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  async function loadStats() {
+    setStatsLoading(true);
+
+    try {
+      const res = await fetch(`${API}/stats`);
+      const data = await res.json();
+      setStats(data);
+    } catch {
+      setStats(null);
+    }
+
+    setStatsLoading(false);
+  }
+
+  useEffect(() => {
+    loadStats();
+  }, []);
 
   async function runChecks() {
     setLoading(true);
@@ -81,6 +102,67 @@ export default function SystemHealthPage() {
         <p className="mt-3 text-sm text-white/60 sm:text-base">
           Verifică rapid toate serviciile backend integrate în StreamVerse.
         </p>
+      </section>
+
+
+      <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-2xl font-black">Platform Stats</h2>
+          <button onClick={loadStats} className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-black">
+            {statsLoading ? 'Se actualizează...' : 'Refresh stats'}
+          </button>
+        </div>
+
+        {stats ? (
+          <>
+            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+              {[
+                ['Sources', stats.totals?.sources || 0],
+                ['Contents', stats.totals?.contents || 0],
+                ['Favorites', stats.totals?.favorites || 0],
+                ['History', stats.totals?.history || 0],
+                ['Continue', stats.totals?.continueWatching || 0],
+                ['Addons', stats.totals?.addons || 0],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl bg-black/40 p-4">
+                  <div className="text-xs font-black uppercase text-white/40">{label}</div>
+                  <div className="mt-2 text-3xl font-black">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {(stats.providers || []).map((item: any) => (
+                <div key={item.provider} className="rounded-2xl bg-black/40 p-4">
+                  <div className="font-black uppercase">{item.provider}</div>
+                  <div className="mt-2 text-sm text-white/50">{item.total} sources</div>
+                </div>
+              ))}
+            </div>
+
+
+            <div className="mt-5">
+              <h3 className="mb-3 text-lg font-black">AI Recommendation Mix</h3>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {(stats.recommendationProviders || []).map((item: any) => (
+                  <div key={`rec-${item.provider}`} className="rounded-2xl bg-[#6A4CFF]/10 p-4">
+                    <div className="font-black uppercase text-[#C7BAFF]">{item.provider}</div>
+                    <div className="mt-2 text-sm text-white/50">{item.total} recommended sources</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 text-xs text-white/35">
+              Generated: {stats.generatedAt}
+            </div>
+          </>
+        ) : (
+          <div className="rounded-2xl bg-black/40 p-5 text-white/40">
+            Stats indisponibile. Verifică backend-ul.
+          </div>
+        )}
       </section>
 
       <button

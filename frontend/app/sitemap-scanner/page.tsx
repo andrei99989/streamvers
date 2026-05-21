@@ -1,9 +1,10 @@
 'use client';
+import { API } from '../../lib/api';
 
 import { useState } from 'react';
 import { Search, Globe2, ExternalLink } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 export default function SitemapScannerPage() {
   const [url, setUrl] = useState('https://www.imdb.com/sitemap.xml');

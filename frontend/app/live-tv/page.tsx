@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { Tv, Radio, Play, Search } from 'lucide-react';
 
 const channels = [
-  { name: 'StreamVerse News', group: 'News', logo: '📰', url: 'https://www.youtube.com/embed/live_stream?channel=UC_x5XG1OV2P6uZZ5FSM9Ttw' },
-  { name: 'Movie Trailers', group: 'Movies', logo: '🎬', url: 'https://www.youtube.com/embed/ScMzIvxBSi4' },
-  { name: 'Anime Channel', group: 'Anime', logo: '🇯🇵', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-  { name: 'Sports Highlights', group: 'Sports', logo: '⚽', url: 'https://www.youtube.com/embed/aqz-KE-bpKQ' },
-  { name: 'Music TV', group: 'Music', logo: '🎵', url: 'https://www.youtube.com/embed/tgbNymZ7vqY' },
-  { name: 'Kids TV', group: 'Kids', logo: '🧸', url: 'https://www.youtube.com/embed/ysz5S6PUM-U' },
+  { name: 'Live News', group: 'News', logo: '📰', url: 'https://www.youtube.com/embed/live_stream?channel=UC_x5XG1OV2P6uZZ5FSM9Ttw' },
+  { name: 'Cinema Live', group: 'Movies', logo: '🎬', url: 'https://www.youtube.com/embed/ScMzIvxBSi4' },
+  { name: 'Anime Live', group: 'Anime', logo: '🇯🇵', url: '' },
+  { name: 'Sports Live', group: 'Sports', logo: '⚽', url: 'https://www.youtube.com/embed/aqz-KE-bpKQ' },
+  { name: 'Music Live', group: 'Music', logo: '🎵', url: 'https://www.youtube.com/embed/tgbNymZ7vqY' },
+  { name: 'Kids Live', group: 'Kids', logo: '🧸', url: 'https://www.youtube.com/embed/ysz5S6PUM-U' },
 ];
 
 const groups = ['All', 'News', 'Movies', 'Anime', 'Sports', 'Music', 'Kids'];

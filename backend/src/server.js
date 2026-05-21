@@ -29,6 +29,20 @@ import sitemapRoutes from './routes/sitemap.js';
 import aiMetadataRoutes from './routes/aiMetadata.js';
 import enrichRoutes from './routes/enrich.js';
 import metadataRoutes from './routes/metadata.routes.js';
+import historyRoutes from './routes/history.js';
+import continueRoutes from './routes/continue.js';
+import favoritesRoutes from './routes/favorites.js';
+import profilesRoutes from './routes/profiles.js';
+import settingsRoutes from './routes/settings.js';
+import libraryRoutes from './routes/library.js';
+import downloadsRoutes from './routes/downloads.js';
+import addonsRoutes from './routes/addons.js';
+import trendingRoutes from './routes/trending.js';
+import statsRoutes from './routes/stats.js';
+import discoveryRoutes from './routes/discovery.js';
+import recommendationsRoutes from './routes/recommendations.js';
+import sourcesRoutes from './routes/sources.js';
+import searchRecentRoutes from './routes/searchRecent.js';
 
 const app = express();
 
@@ -50,9 +64,9 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/auth', authRoutes);
-app.use('/profiles', profileRoutes);
 app.use('/movies', movieRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/search/recent', searchRecentRoutes);
 app.use('/search', searchRoutes);
 app.use('/stream', streamRoutes);
 app.use('/ai', aiRoutes);
@@ -72,12 +86,25 @@ app.use('/sitemap', sitemapRoutes);
 app.use('/ai-metadata', aiMetadataRoutes);
 app.use('/enrich', enrichRoutes);
 app.use('/metadata', metadataRoutes);
+app.use('/history', historyRoutes);
+app.use('/continue', continueRoutes);
+app.use('/favorites', favoritesRoutes);
+app.use('/profiles', profilesRoutes);
+app.use('/settings', settingsRoutes);
+app.use('/library', libraryRoutes);
+app.use('/downloads', downloadsRoutes);
+app.use('/addons', addonsRoutes);
+app.use('/stats', statsRoutes);
+app.use('/trending', trendingRoutes);
+app.use('/discovery', discoveryRoutes);
+app.use('/recommendations', recommendationsRoutes);
+app.use('/sources', sourcesRoutes);
 
 const port = process.env.PORT || 4000;
 
 connectDB()
   .then(() => {
-    app.listen(port, () => console.log(`API on :${port}`));
+    app.listen(port, () => console.info(`API on :${port}`));
   })
   .catch((err) => {
     console.error(err);

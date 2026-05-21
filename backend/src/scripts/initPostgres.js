@@ -62,7 +62,7 @@ async function init() {
     );
   `);
 
-  console.log('PostgreSQL tables created successfully');
+  console.info('PostgreSQL tables created successfully');
   process.exit(0);
 }
 

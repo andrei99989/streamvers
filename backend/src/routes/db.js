@@ -226,4 +226,31 @@ router.delete('/sources/:id', async (req, res) => {
   }
 });
 
+
+router.patch('/sources-normalize', async (_req, res) => {
+  try {
+    const result = await query(`
+      UPDATE sources
+      SET source_type = CASE
+        WHEN LOWER(url) LIKE '%youtube.com%' OR LOWER(url) LIKE '%youtu.be%' THEN 'youtube'
+        WHEN LOWER(url) LIKE '%vimeo.com%' THEN 'vimeo'
+        WHEN LOWER(url) LIKE '%dailymotion.com%' OR LOWER(url) LIKE '%dai.ly%' THEN 'dailymotion'
+        WHEN LOWER(url) LIKE '%tiktok.com%' THEN 'tiktok'
+        WHEN LOWER(url) LIKE '%terabox.com%' OR LOWER(url) LIKE '%1024tera.com%' THEN 'terabox'
+        WHEN LOWER(url) LIKE '%rumble.com%' THEN 'rumble'
+        WHEN LOWER(url) LIKE '%twitch.tv%' THEN 'twitch'
+        WHEN LOWER(url) LIKE '%.m3u8%' THEN 'hls'
+        WHEN LOWER(url) LIKE '%.mp4%' THEN 'mp4'
+        WHEN LOWER(url) LIKE '%.webm%' THEN 'webm'
+        ELSE source_type
+      END
+      RETURNING id, url, source_type
+    `);
+
+    res.json({ ok: true, updated: result.rowCount, items: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

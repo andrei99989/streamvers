@@ -1,97 +1,91 @@
 'use client';
 
+import { apiDelete, apiFetch, apiPost } from '../../lib/apiClient';
 import { useEffect, useState } from 'react';
-import { Download, Trash2, HardDrive } from 'lucide-react';
+import { Download, Plus, Trash2 } from 'lucide-react';
 
 export default function DownloadsPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+
+  async function loadItems() {
+    const data = await apiFetch('/downloads');
+    setItems(data.items || []);
+  }
+
+  async function addItem() {
+    if (!title.trim() && !url.trim()) return;
+
+    await apiPost('/downloads', {
+      title: title || 'Download',
+      url,
+    });
+
+    setTitle('');
+    setUrl('');
+    loadItems();
+  }
+
+  async function removeItem(id: string) {
+    await apiDelete(`/downloads/${id}`);
+    setItems((prev) => prev.filter((x) => String(x.id) !== String(id)));
+  }
 
   useEffect(() => {
-    const saved = localStorage.getItem('streamverse_downloads');
-    setItems(saved ? JSON.parse(saved) : []);
+    loadItems();
   }, []);
 
-  function addDemo() {
-    const item = {
-      id: Date.now(),
-      title: 'Demo Download',
-      size: Math.floor(Math.random() * 900) + 300,
-      type: 'Movie',
-      image: `https://picsum.photos/400/600?random=${Date.now()}`
-    };
-
-    const next = [item, ...items];
-    setItems(next);
-    localStorage.setItem('streamverse_downloads', JSON.stringify(next));
-  }
-
-  function remove(id: number) {
-    const next = items.filter((x) => x.id !== id);
-    setItems(next);
-    localStorage.setItem('streamverse_downloads', JSON.stringify(next));
-  }
-
-  const total = items.reduce((sum, item) => sum + Number(item.size || 0), 0);
-
   return (
-    <main className="min-h-screen bg-black p-6 text-white md:p-10">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="mb-3 inline-flex rounded-full bg-[#00E0A8]/20 px-4 py-2 text-sm font-black text-[#00E0A8]">
-            OFFLINE MANAGER
-          </div>
+    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+      <section className="glass mb-8 rounded-[2.5rem] p-8">
+        <h1 className="flex items-center gap-3 text-5xl font-black">
+          <Download />
+          Downloads
+        </h1>
 
-          <h1 className="flex items-center gap-3 text-5xl font-black">
-            <Download />
-            Downloads
-          </h1>
+        <div className="mt-6 grid gap-3 md:grid-cols-[1fr_2fr_auto]">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Titlu"
+            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+          />
 
-          <p className="mt-3 text-white/50">
-            Filme și episoade salvate pentru vizionare offline.
-          </p>
-        </div>
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="URL"
+            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+          />
 
-        <button onClick={addDemo} className="rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black">
-          + Demo Download
-        </button>
-      </div>
-
-      <section className="mb-8 rounded-3xl border border-white/10 bg-white/[0.06] p-6">
-        <div className="flex items-center gap-3">
-          <HardDrive className="text-[#00E0A8]" />
-          <div>
-            <div className="text-sm text-white/50">Spațiu ocupat</div>
-            <div className="text-3xl font-black">{total} MB</div>
-          </div>
+          <button onClick={addItem} className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-5 py-4 font-black">
+            <Plus size={18} />
+            Add
+          </button>
         </div>
       </section>
 
-      {items.length === 0 ? (
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-white/50">
-          Nu ai descărcări încă.
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-          {items.map((item) => (
-            <div key={item.id} className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06]">
-              <img src={item.image} className="h-60 w-full object-cover" />
-
-              <div className="p-4">
-                <div className="font-black">{item.title}</div>
-                <div className="mt-1 text-sm text-white/50">{item.type} • {item.size} MB</div>
-
-                <button
-                  onClick={() => remove(item.id)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-red-500 px-4 py-3 font-black"
-                >
-                  <Trash2 size={16} />
-                  Șterge
-                </button>
-              </div>
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {items.map((item) => (
+          <div key={item.id} className="glass rounded-[2rem] p-5">
+            <div className="mb-3 w-fit rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase">
+              {item.status || 'saved'}
             </div>
-          ))}
-        </div>
-      )}
+
+            <h2 className="text-2xl font-black">{item.title}</h2>
+            <p className="mt-2 break-all text-sm text-white/40">{item.url}</p>
+
+            <button
+              onClick={() => removeItem(item.id)}
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-red-500 px-4 py-3 font-black"
+            >
+              <Trash2 size={16} />
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
     </main>
   );
 }

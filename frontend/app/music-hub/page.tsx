@@ -1,9 +1,10 @@
 'use client';
+import { API } from '../../lib/api';
 
 import { useEffect, useState } from 'react';
 import { Music, Play, Search } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 export default function MusicHubPage() {
   const [q, setQ] = useState('adele');

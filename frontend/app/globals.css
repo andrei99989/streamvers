@@ -2,8 +2,290 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { background: #0A0A0F; color: white; }
-body { min-height: 100vh; }
-.card-glow { box-shadow: 0 20px 80px rgba(106,76,255,.18); }
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+html,
+body {
+  background: #000;
+  color: white;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at top, rgba(106,76,255,.12), transparent 35%),
+    radial-gradient(circle at bottom, rgba(0,224,168,.08), transparent 30%);
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.snap-x-scroll {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-card {
+  scroll-snap-align: start;
+}
+
+.hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .45;
+  background:
+    radial-gradient(circle at 25% 15%, rgba(106,76,255,.10), transparent 32%),
+    radial-gradient(circle at 78% 42%, rgba(0,224,168,.07), transparent 28%);
+  filter: blur(30px);
+  animation: pulseGlow 10s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  from {
+    opacity: .25;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: .55;
+    transform: scale(1.08);
+  }
+}
+
+.netflix-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.netflix-card:hover {
+  transform: translateY(-6px) scale(1.02);
+}
+
+.glass-nav {
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.fade-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  background: linear-gradient(to top, black, transparent);
+  pointer-events: none;
+}
+
+
+.hero-wrapper {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-wrapper .hero-glow {
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  opacity: .32;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.content-section {
+  position: relative;
+  z-index: 5;
+  background: #000;
+}
+
+html,
+body {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+main {
+  background: #000;
+}
+
+.stats-mobile-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.stats-mobile-card {
+  min-height: 92px !important;
+  width: 100% !important;
+  max-width: none !important;
+  border-radius: 20px !important;
+  padding: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+@media (min-width: 768px) {
+  .stats-mobile-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .stats-mobile-card {
+    min-height: 140px !important;
+    border-radius: 32px !important;
+    padding: 20px !important;
+  }
+}
+
+.stats-mobile-grid > .stats-mobile-card {
+  display: flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  transform: none !important;
+}
+
+.stats-mobile-grid a {
+  grid-column: auto !important;
+}
+
+/* Final mobile polish */
+::-webkit-scrollbar {
+  display: none !important;
+}
+
+* {
+  scrollbar-width: none !important;
+}
+
+/* STREAMVERSE MOBILE FINAL FIX */
+@media (max-width: 768px) {
+  html, body {
+    width: 100%;
+    max-width: 100vw;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    background: #000 !important;
+    touch-action: pan-y !important;
+  }
+
+  main {
+    overflow: visible !important;
+    min-height: auto !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-bottom: 110px !important;
+  }
+
+  .section-fade {
+    margin-top: 1.6rem !important;
+    margin-bottom: 1.8rem !important;
+  }
+
+  .pointer-events-none.fixed.inset-x-0 {
+    bottom: 18px !important;
+    z-index: 99999 !important;
+  }
+
+  .glass-nav {
+    width: 86% !important;
+    max-width: 340px !important;
+    height: 64px !important;
+    padding: 0.35rem 0.6rem !important;
+    border-radius: 28px !important;
+    background: rgba(0,0,0,.9) !important;
+    box-shadow: 0 0 20px rgba(55,0,255,.35) !important;
+  }
+}
+
+/* SIDEBAR MOBILE SCROLL FIX */
+@media (max-width: 768px) {
+  aside,
+  nav {
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .sidebar-scroll,
+  aside [class*="overflow-y-auto"] {
+    max-height: calc(100dvh - 90px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    padding-bottom: 160px !important;
+  }
+}
+
+
+.mobile-dock-safe{
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)!important;
+}
+
+.mobile-floating-offset{
+  bottom:calc(env(safe-area-inset-bottom,0px) + 90px)!important;
+}
+
+@media (max-width:768px){
+  .hero-mobile-compact{
+    min-height:62vh!important;
+    padding-top:24px!important;
+  }
+}
+
+/* REAL SIDEBAR MOBILE SCROLL FIX */
+@media (max-width: 768px) {
+  body:has(.sidebar-scroll) {
+    overflow: hidden !important;
+  }
+
+  .sidebar-scroll {
+    height: calc(100dvh - 80px) !important;
+    max-height: calc(100dvh - 80px) !important;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+    padding-bottom: 220px !important;
+  }
+
+  .sidebar-scroll * {
+    touch-action: pan-y !important;
+  }
+}
+
+/* FORCE SIDEBAR SCROLL REAL */
+@media (max-width: 768px) {
+  body:has(aside) {
+    overflow: hidden !important;
+  }
+
+  aside {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+    padding-bottom: 180px !important;
+  }
+
+  aside > * {
+    min-height: max-content !important;
+  }
+
+  aside nav,
+  aside div {
+    overflow: visible !important;
+  }
+}

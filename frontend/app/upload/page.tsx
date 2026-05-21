@@ -1,12 +1,12 @@
 'use client';
+import { API } from '../../lib/api';
 
-'use client';
 
 import { useState } from 'react';
-import UniversalPlayer from '../../components/player/UniversalPlayer';
+import UniversalPlayer from '../../components/UniversalPlayer';
 import { Upload, Save, Play } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 function detectSource(url: string) {
   const clean = url.toLowerCase();
@@ -32,10 +32,14 @@ export default function UploadPage() {
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [active, setActive] = useState('');
+  const [message, setMessage] = useState('');
   const type = url ? detectSource(url) : 'unknown';
 
   async function saveSource() {
-    if (!url.trim()) return alert('Adaugă un URL');
+    if (!url.trim()) {
+      setMessage('Adaugă un URL');
+      return;
+    }
 
     try {
       const res = await fetch(`${API}/db/sources`, {
@@ -56,21 +60,9 @@ export default function UploadPage() {
       if (!res.ok) {
         throw new Error(json.error || 'Eroare salvare Neon');
       }
-
-      const saved = JSON.parse(localStorage.getItem('streamverse_sources') || '[]');
-      const localItem = {
-        id: json.id,
-        contentId: json.content_id,
-        title: title || 'Sursă fără titlu',
-        url,
-        type,
-        createdAt: json.created_at
-      };
-
-      localStorage.setItem('streamverse_sources', JSON.stringify([localItem, ...saved]));
-      alert('Sursa a fost salvată în Neon + localStorage');
+      setMessage('Sursa a fost salvată în Neon');
     } catch (error: any) {
-      alert(error.message);
+      setMessage(error.message || 'Eroare la salvare');
     }
   }
 
@@ -125,7 +117,21 @@ export default function UploadPage() {
 
       {active && (
         <div className="mt-8 aspect-video overflow-hidden rounded-3xl border border-white/10 bg-black">
-          <UniversalPlayer url={active} />
+          <UniversalPlayer
+            source={{
+              url: active,
+              type: active.endsWith('.mp4')
+                ? 'mp4'
+                : active.endsWith('.webm')
+                  ? 'webm'
+                  : active.endsWith('.m3u8')
+                    ? 'hls'
+                    : 'iframe',
+              provider: 'upload-preview',
+              title: 'Upload Preview',
+            }}
+            title="Upload Preview"
+          />
         </div>
       )}
     </main>

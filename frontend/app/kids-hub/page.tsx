@@ -48,7 +48,7 @@ export default function KidsHubPage() {
                   className="min-w-[160px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
                   <img
-                    src={`https://picsum.photos/400/600?random=kids-${slugify(item)}-${i}`}
+                    src={"/placeholder-poster.svg"}
                     alt={item}
                     className="h-60 w-full object-cover"
                   />

@@ -65,7 +65,7 @@ export default function StudiosPage() {
                   className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] transition hover:scale-[1.02] hover:border-[#6A4CFF]"
                 >
                   <img
-                    src={`https://picsum.photos/600/350?random=studio-${slugify(studio)}-${i}`}
+                    src={"/placeholder-wide.svg"}
                     alt={studio}
                     className="h-32 w-full object-cover"
                   />

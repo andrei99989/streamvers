@@ -1,53 +1,259 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import UniversalPlayer from '../../components/player/UniversalPlayer';
-import { Play, Trash2, Library, Database } from 'lucide-react';
+import { apiPost } from '../../lib/apiClient';
+import { API } from '../../lib/api';
 
-const API = 'http://127.0.0.1:4000';
+import { useEffect, useMemo, useState } from 'react';
+import UniversalPlayer from '../../components/UniversalPlayer';
+import { Play, Trash2, Library, Database, Plus, Search } from 'lucide-react';
 
+function detectProvider(url: string) {
+  const value = String(url || '').toLowerCase();
+
+  if (value.includes('youtube.com') || value.includes('youtu.be')) return 'youtube';
+  if (value.includes('vimeo.com')) return 'vimeo';
+  if (value.includes('dailymotion.com') || value.includes('dai.ly')) return 'dailymotion';
+  if (value.includes('tiktok.com')) return 'tiktok';
+  if (value.includes('terabox.com') || value.includes('1024tera.com')) return 'terabox';
+  if (value.includes('rumble.com')) return 'rumble';
+  if (value.includes('twitch.tv')) return 'twitch';
+  if (value.includes('drive.google.com')) return 'google-drive';
+  if (value.endsWith('.m3u8')) return 'hls';
+  if (value.endsWith('.mp4')) return 'mp4';
+  if (value.endsWith('.webm')) return 'webm';
+
+  return 'unknown';
+}
+
+function detectType(url: string) {
+  const value = String(url || '').toLowerCase();
+
+  if (value.endsWith('.m3u8')) return 'hls';
+  if (value.endsWith('.mp4')) return 'mp4';
+  if (value.endsWith('.webm')) return 'webm';
+
+  return 'iframe';
+}
+
+function getYoutubeId(url: string) {
+  if (!url) return '';
+
+  try {
+    if (url.includes('youtube.com/watch')) {
+      return new URL(url).searchParams.get('v') || '';
+    }
+
+    if (url.includes('youtu.be/')) {
+      return url.split('youtu.be/')[1]?.split('?')[0] || '';
+    }
+
+    if (url.includes('youtube.com/embed/')) {
+      return url.split('/embed/')[1]?.split('?')[0] || '';
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+}
+
+function getCardThumbnail(item: any) {
+  const url = item.url || item.embedUrl || item.embed_url || '';
+  const metadata = item.metadata || {};
+
+  if (item.poster) return item.poster;
+  if (item.thumbnail) return item.thumbnail;
+  if (metadata.thumbnail) return metadata.thumbnail;
+
+  const youtubeId = getYoutubeId(url);
+  if (youtubeId) return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+
+  return '';
+}
+
+function getItemProvider(item: any) {
+  return item.provider || item.source_type || item.type || detectProvider(item.url || '');
+}
+
+function getItemType(item: any) {
+  const type = String(item.type || item.source_type || detectType(item.url || '')).toLowerCase();
+
+  if (['mp4', 'webm', 'hls'].includes(type)) return type;
+  return detectType(item.url || '');
+}
+
+function getPreviewEmbed(item: any) {
+  return '';
+}
 export default function SourcesPage() {
   const [sources, setSources] = useState<any[]>([]);
+  const [message, setMessage] = useState('');
   const [active, setActive] = useState<any>(null);
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [category, setCategory] = useState('custom');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function loadSources() {
+    try {
+      const res = await fetch(`${API}/sources`);
+      const data = await res.json();
+      setSources(data.items || []);
+    } catch {
+      setSources([]);
+    }
+  }
 
   useEffect(() => {
-    fetch(`${API}/db/sources`)
-      .then((r) => r.json())
-      .then(setSources)
-      .catch(() => setSources(JSON.parse(localStorage.getItem('streamverse_sources') || '[]')));
+    loadSources();
   }, []);
 
-  function save(next: any[]) {
+  async function normalizeProviders() {
+    try {
+      const data = await apiPost('/sources/normalize', {});
+      setMessage(`✅ Providers normalizați: ${data.updated || 0}`);
+      await loadSources();
+    } catch {
+      setMessage('❌ Normalizare provider eșuată');
+    }
+  }
+
+  async function normalizeThumbnails() {
+    try {
+      const data = await apiPost('/sources/normalize-thumbnails', {});
+      setMessage(`✅ Thumbnails generate: ${data.updated || 0}`);
+      await loadSources();
+    } catch {
+      setMessage('❌ Generare thumbnails eșuată');
+    }
+  }
+
+  const filteredSources = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    if (!q) return sources;
+
+    return sources.filter((item) =>
+      [
+        item.title,
+        item.url,
+        getItemProvider(item),
+        item.category,
+        item.content_type,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [sources, search]);
+
+  function saveLocal(next: any[]) {
     setSources(next);
-    localStorage.setItem('streamverse_sources', JSON.stringify(next));
   }
 
-  function remove(id: any) {
-    fetch(`${API}/db/sources/${id}`, { method: 'DELETE' }).catch(() => null);
-    save(sources.filter((x) => x.id !== id));
-    if (active?.id === id) setActive(null);
-  }
+  async function addSource() {
+    if (!url.trim()) return;
 
-  function addToLibrary(item: any) {
-    const saved = JSON.parse(localStorage.getItem('streamverse_library') || '[]');
-
-    const libraryItem = {
-      id: item.id,
-      title: item.title,
-      subtitle: `${item.source_type || item.type} • custom source`,
-      source: 'custom',
-      image: '',
-      url: item.url
+    const item = {
+      title: title.trim() || 'Untitled source',
+      url: url.trim(),
+      embedUrl: url.trim(),
+      provider: detectProvider(url),
+      type: detectType(url),
+      category,
     };
 
-    localStorage.setItem('streamverse_library', JSON.stringify([libraryItem, ...saved]));
-    alert('Adăugat în Library');
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API}/sources`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
+
+      const created = await res.json();
+      setSources([created, ...sources]);
+      setActive(created);
+    } catch {
+      const created = {
+        id: crypto.randomUUID(),
+        ...item,
+        createdAt: new Date().toISOString(),
+      };
+
+      saveLocal([created, ...sources]);
+      setActive(created);
+    }
+
+    setTitle('');
+    setUrl('');
+    setLoading(false);
+  }
+
+  async function remove(id: string) {
+    try {
+      await fetch(`${API}/sources/${id}`, { method: 'DELETE' });
+    } catch (error) {
+      console.error('Sources action failed:', error);
+    }
+
+    const next = sources.filter((x) => String(x.id) !== String(id));
+    saveLocal(next);
+
+    if (String(active?.id) === String(id)) setActive(null);
+  }
+
+  async function addToLibrary(item: any) {
+    await fetch(`${API}/favorites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceId: String(item.id),
+        contentId: String(item.content_id || ''),
+        title: item.title || 'Untitled source',
+        url: item.url,
+        provider: getItemProvider(item),
+        sourceType: getItemType(item),
+        poster: getCardThumbnail(item),
+        metadata: {
+          category: item.category || item.content_type || 'custom',
+        },
+      }),
+    });
+  }
+
+  async function playItem(item: any) {
+    setActive(item);
+
+    try {
+      await fetch(`${API}/history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceId: String(item.id),
+          contentId: String(item.content_id || ''),
+          title: item.title || 'Untitled source',
+          url: item.url,
+          provider: getItemProvider(item),
+          sourceType: getItemType(item),
+          poster: getCardThumbnail(item),
+          progress: 1,
+          metadata: {
+            category: item.category || item.content_type || 'custom',
+          },
+        }),
+      });
+    } catch (error) {
+      console.error('Sources action failed:', error);
+    }
   }
 
   return (
-    <main className="min-h-screen bg-black p-6 text-white md:p-10">
-      <div className="mb-8">
+    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+      <section className="mb-8 rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-6 md:p-8">
         <div className="mb-3 inline-flex rounded-full bg-[#6A4CFF]/20 px-4 py-2 text-sm font-black text-[#B8A7FF]">
           CUSTOM SOURCES
         </div>
@@ -58,57 +264,193 @@ export default function SourcesPage() {
         </h1>
 
         <p className="mt-3 max-w-3xl text-white/50">
-          Sursele salvate din Upload: iframe, MP4, WebM și HLS.
+          Salvează URL-uri, iframe-uri, MP4, WebM, HLS, YouTube, Vimeo, Dailymotion, TikTok, TeraBox și alte surse.
         </p>
-      </div>
 
-      <div className="mb-6 flex gap-3">
-        <Link href="/upload" className="rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black">
-          + Upload URL
-        </Link>
-      </div>
+        <div className="mt-8 grid gap-3 md:grid-cols-[1fr_2fr_auto]">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Titlu sursă"
+            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-[#6A4CFF]"
+          />
+
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="URL / iframe / mp4 / m3u8..."
+            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-[#6A4CFF]"
+          />
+
+          <button
+            onClick={addSource}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-black disabled:opacity-60"
+          >
+            <Plus size={18} />
+            {loading ? 'Salvez...' : 'Adaugă'}
+          </button>
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-[320px_1fr]">
+          <input
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="Categorie"
+            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-[#6A4CFF]"
+          />
+
+          <div className="relative">
+            <Search
+              className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40"
+              size={18}
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Caută în sursele salvate..."
+              className="w-full rounded-2xl border border-white/10 bg-black/40 py-4 pl-12 pr-5 outline-none focus:border-[#6A4CFF]"
+            />
+          </div>
+        </div>
+      </section>
 
       {active && (
-        <section className="mb-8 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
-          <h2 className="mb-4 text-3xl font-black">{active.title}</h2>
-          <div className="aspect-video overflow-hidden rounded-2xl bg-black">
-            <UniversalPlayer url={active.url} />
+        <section className="mb-8 overflow-hidden rounded-[2rem] border border-[#6A4CFF]/30 bg-gradient-to-br from-[#120f24] to-black p-5 shadow-[0_0_60px_rgba(106,76,255,0.25)]">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="mb-2 inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-black uppercase">
+                {getItemProvider(active)}
+              </div>
+
+              <h2 className="text-4xl font-black">{active.title}</h2>
+
+              <p className="mt-2 break-all text-sm text-white/40">{active.url}</p>
+            </div>
           </div>
+
+          <UniversalPlayer
+            source={{
+              url: active.embedUrl || active.embed_url || active.url,
+              type: getItemType(active),
+              provider: getItemProvider(active),
+              sourceId: String(active.id),
+              contentId: String(active.content_id || ''),
+              title: active.title,
+              poster: getCardThumbnail(active),
+            }}
+            title={active.title}
+          />
         </section>
       )}
 
-      {sources.length === 0 ? (
+      {filteredSources.length === 0 ? (
         <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-white/50">
           Nu ai surse salvate încă.
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {sources.map((item) => (
-            <div key={item.id} className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
-              <div className="mb-3 rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase w-fit">
-                {item.source_type || item.type}
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {filteredSources.map((item) => {
+            const provider = getItemProvider(item);
+            const previewEmbed = getPreviewEmbed(item);
+            const thumbnail = getCardThumbnail(item);
+
+            return (
+              <div
+                key={item.id}
+                className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] transition duration-300 hover:-translate-y-1 hover:border-[#6A4CFF] hover:shadow-[0_0_40px_rgba(106,76,255,0.35)]"
+              >
+                <div className="relative aspect-video overflow-hidden bg-black"><div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                  {previewEmbed ? (
+                    <iframe
+                      src={previewEmbed}
+                      className="h-full w-full scale-[1.02]"
+                      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : thumbnail ? (
+                    <img
+                      src={thumbnail}
+                      alt={item.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-white/5">
+                      <Play size={70} className="text-white/40" />
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => playItem(item)}
+                    className="absolute inset-0 flex items-center justify-center bg-black/10"
+                  >
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/90 text-black shadow-2xl backdrop-blur-xl transition group-hover:scale-110">
+                      <Play size={46} fill="currentColor" />
+                    </div>
+                  </button>
+
+                  <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase text-white">
+                      {provider}
+                    </span>
+
+                    <span className="rounded-full bg-[#00E0A8]/20 px-3 py-1 text-xs font-black uppercase text-[#00E0A8]">
+                      {item.status || 'active'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <h2 className="line-clamp-2 min-h-[4rem] text-2xl font-black leading-tight">
+                    {item.title}
+                  </h2>
+
+                  <p className="mt-3 line-clamp-2 break-all text-sm text-white/40">
+                    {item.url}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase text-white/50">
+                    <span className="rounded-full bg-white/10 px-3 py-1">
+                      {item.quality || 'auto'}
+                    </span>
+
+                    <span className="rounded-full bg-white/10 px-3 py-1">
+                      {item.language || 'ro'}
+                    </span>
+
+                    <span className="rounded-full bg-white/10 px-3 py-1">
+                      {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'recent'}
+                    </span>
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => playItem(item)}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-black"
+                    >
+                      <Play size={16} />
+                      Play
+                    </button>
+
+                    <button
+                      onClick={() => addToLibrary(item)}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black"
+                    >
+                      <Library size={16} />
+                      Library
+                    </button>
+
+                    <button
+                      onClick={() => remove(item.id)}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 font-black"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
-
-              <h2 className="line-clamp-2 text-xl font-black">{item.title}</h2>
-              <p className="mt-2 line-clamp-2 text-sm text-white/40">{item.url}</p>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button onClick={() => setActive(item)} className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 font-black text-black">
-                  <Play size={16} />
-                  Play
-                </button>
-
-                <button onClick={() => addToLibrary(item)} className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-4 py-3 font-black">
-                  <Library size={16} />
-                  Library
-                </button>
-
-                <button onClick={() => remove(item.id)} className="inline-flex items-center gap-2 rounded-2xl bg-red-500 px-4 py-3 font-black">
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </main>

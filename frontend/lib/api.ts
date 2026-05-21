@@ -1,6 +1,5 @@
-export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-export async function api(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${API}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, cache: 'no-store' });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'API error');
-  return res.json();
-}
+export const API =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:4000`
+    : process.env.API_INTERNAL_URL || 'http://0.0.0.0:4000');

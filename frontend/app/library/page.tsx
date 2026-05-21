@@ -1,132 +1,70 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-
-const tabs = ['Catalog', 'Movies', 'Series', 'Channels'];
-const sorts = [
-  'By Last Watched',
-  'By Name',
-  'By Name Descending',
-  'By Times Watched',
-  'By Watched',
-  'By Not Watched'
-];
+import { apiDelete, apiFetch } from '../../lib/apiClient';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Library, Play, Trash2 } from 'lucide-react';
 
 export default function LibraryPage() {
   const [items, setItems] = useState<any[]>([]);
-  const [tab, setTab] = useState('Catalog');
-  const [sort, setSort] = useState('By Last Watched');
 
-  useEffect(() => {
-    setItems(JSON.parse(localStorage.getItem('streamverse_library') || '[]'));
-  }, []);
-
-  const filtered = useMemo(() => {
-    let list = [...items];
-
-    if (tab === 'Movies') list = list.filter((x) => String(x.subtitle || '').toLowerCase().includes('movie'));
-    if (tab === 'Series') list = list.filter((x) => String(x.subtitle || '').toLowerCase().includes('series'));
-    if (tab === 'Channels') list = list.filter((x) => String(x.source || '').toLowerCase().includes('youtube'));
-
-    if (sort === 'By Name') list.sort((a, b) => String(a.title).localeCompare(String(b.title)));
-    if (sort === 'By Name Descending') list.sort((a, b) => String(b.title).localeCompare(String(a.title)));
-    if (sort === 'By Watched') list = list.filter((x) => x.watched);
-    if (sort === 'By Not Watched') list = list.filter((x) => !x.watched);
-
-    return list;
-  }, [items, tab, sort]);
-
-  function clearLibrary() {
-    localStorage.removeItem('streamverse_library');
-    setItems([]);
+  async function loadItems() {
+    const data = await apiFetch('/library');
+    setItems(data.items || []);
   }
 
+  async function removeItem(id: string) {
+    await apiDelete(`/library/${id}`);
+    setItems((prev) => prev.filter((x) => String(x.id) !== String(id)));
+  }
+
+  useEffect(() => {
+    loadItems();
+  }, []);
+
   return (
-    <section className="min-h-screen bg-black p-6 text-white md:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-5xl font-black">Library</h1>
-          <p className="mt-2 text-white/50">Catalogul tău StreamVerse</p>
-        </div>
+    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+      <section className="glass mb-8 rounded-[2.5rem] p-8">
+        <h1 className="flex items-center gap-3 text-5xl font-black">
+          <Library />
+          Library
+        </h1>
+      </section>
 
-        <button onClick={clearLibrary} className="rounded-2xl bg-white/10 px-5 py-3 font-bold">
-          Curăță Library
-        </button>
-      </div>
-
-      <div className="mt-8 overflow-x-auto">
-        <div className="flex gap-3">
-          {tabs.map((x) => (
-            <button
-              key={x}
-              onClick={() => setTab(x)}
-              className={`rounded-full px-5 py-3 font-bold ${
-                tab === x ? 'bg-[#6A4CFF]' : 'bg-white/10'
-              }`}
-            >
-              {x}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-5 overflow-x-auto">
-        <div className="flex gap-3">
-          {sorts.map((x) => (
-            <button
-              key={x}
-              onClick={() => setSort(x)}
-              className={`rounded-full px-4 py-2 text-sm font-bold ${
-                sort === x ? 'bg-[#00E0A8] text-black' : 'bg-white/10 text-white/70'
-              }`}
-            >
-              {x}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-5 lg:grid-cols-6">
-        {filtered.map((item, i) => (
-          <div key={i} className="overflow-hidden rounded-3xl border border-white/10 bg-white/10">
-            {item.image ? (
-              <img src={item.image} alt={item.title} className="h-60 w-full object-cover" />
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {items.map((item) => (
+          <div key={item.id} className="glass overflow-hidden rounded-[2rem]">
+            {item.poster ? (
+              <img src={item.poster} alt={item.title} className="h-56 w-full object-cover" />
             ) : (
-              <div className="flex h-60 items-center justify-center bg-white/5 text-4xl">🎬</div>
+              <div className="flex h-56 items-center justify-center bg-white/5">
+                <Play size={48} className="text-white/40" />
+              </div>
             )}
 
-            <div className="p-4">
-              <div className="line-clamp-2 font-bold">{item.title || 'Fără titlu'}</div>
-              <div className="mt-1 text-xs text-white/50">{item.subtitle || item.source || 'Library item'}</div>
+            <div className="p-5">
+              <h2 className="line-clamp-2 text-2xl font-black">{item.title}</h2>
 
-              <div className="mt-3 flex gap-2">
-                <span className="rounded-full bg-black/30 px-3 py-1 text-xs">
-                  {item.source || 'local'}
-                </span>
+              <div className="mt-5 flex gap-3">
+                <Link
+                  href={`/watch/${item.source_id || item.id}`}
+                  className="rounded-2xl bg-[#6A4CFF] px-4 py-3 font-black"
+                >
+                  Play
+                </Link>
 
                 <button
-                  onClick={() => {
-                    const updated = items.map((x, idx) =>
-                      idx === i ? { ...x, watched: !x.watched } : x
-                    );
-                    localStorage.setItem('streamverse_library', JSON.stringify(updated));
-                    setItems(updated);
-                  }}
-                  className="rounded-full bg-[#6A4CFF] px-3 py-1 text-xs font-bold"
+                  onClick={() => removeItem(item.id)}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-red-500 px-4 py-3 font-black"
                 >
-                  {item.watched ? 'Watched' : 'Not Watched'}
+                  <Trash2 size={16} />
+                  Delete
                 </button>
               </div>
             </div>
           </div>
         ))}
       </div>
-
-      {filtered.length === 0 && (
-        <div className="mt-16 rounded-3xl border border-white/10 bg-white/5 p-8 text-center text-white/50">
-          Nu ai elemente în acest catalog încă.
-        </div>
-      )}
-    </section>
+    </main>
   );
 }

@@ -99,7 +99,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#05050a] text-white">
-      <header className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-white/10 bg-black/70 px-4 backdrop-blur-xl">
+      <header className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-white/10 bg-black/45 px-4 backdrop-blur-md">
         <button onClick={() => setOpen(true)} className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-xl hover:bg-white/20">
           ☰
         </button>
@@ -136,7 +136,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <button onClick={() => setOpen(false)} className="rounded-xl bg-white/10 px-3 py-2">✕</button>
         </div>
 
-        <div className="h-[calc(100vh-90px)] overflow-y-auto px-4 py-6">
+        <div className="min-h-screen overflow-visible px-4 py-6 pb-40">
           {sections.map((section) => (
             <div key={section.title} className="mb-8">
               <h2 className="mb-3 px-3 text-xs font-bold uppercase tracking-[0.2em] text-white/30">{section.title}</h2>

@@ -19,7 +19,7 @@
 
 `POST /upload`
 ```json
-{"title":"Film demo","url":"https://example.com/video.mp4","isPrimary":true}
+{"title":"Film real","url":"https://your-real-source-url.com/video.mp4","isPrimary":true}
 ```
 
 ## Stream

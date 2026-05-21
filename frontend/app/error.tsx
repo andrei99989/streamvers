@@ -5,30 +5,34 @@ import { AlertTriangle, Home, RefreshCcw } from 'lucide-react';
 
 export default function ErrorPage({
   error,
-  reset
+  reset,
 }: {
-  error: Error;
+  error: Error & { digest?: string };
   reset: () => void;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black p-6 text-white">
-      <section className="max-w-xl rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 text-center">
-        <AlertTriangle className="mx-auto text-red-400" size={56} />
+    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+      <section className="mx-auto max-w-3xl rounded-[2.5rem] border border-red-500/20 bg-red-500/5 p-8 text-center backdrop-blur-xl">
+        <AlertTriangle className="mx-auto text-red-400" size={64} />
 
-        <h1 className="mt-6 text-4xl font-black">A apărut o eroare</h1>
+        <h1 className="mt-6 text-5xl font-black">
+          A apărut o eroare
+        </h1>
 
-        <p className="mt-3 text-white/50">
-          StreamVerse a întâlnit o problemă, dar aplicația poate continua.
+        <p className="mt-4 text-white/60">
+          StreamVerse a prins eroarea. Poți reîncerca fără să pierzi sesiunea.
         </p>
 
-        <pre className="mt-6 max-h-40 overflow-auto rounded-2xl bg-black/60 p-4 text-left text-xs text-red-300">
-          {error.message}
-        </pre>
+        {error?.message && (
+          <pre className="mt-6 max-h-40 overflow-auto rounded-2xl border border-white/10 bg-black/60 p-4 text-left text-xs text-white/50">
+            {error.message}
+          </pre>
+        )}
 
-        <div className="mt-6 flex justify-center gap-3">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
             onClick={reset}
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black"
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-black text-white"
           >
             <RefreshCcw size={18} />
             Reîncearcă
@@ -36,7 +40,7 @@ export default function ErrorPage({
 
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-black"
+            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-6 py-4 font-black text-white"
           >
             <Home size={18} />
             Acasă

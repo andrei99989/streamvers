@@ -12,7 +12,7 @@ const aiRows = [
   {
     title: 'Playlist-uri generate automat',
     icon: ListMusic,
-    items: ['Weekend Action', 'Anime Night', 'Kids Safe Mode', 'K-Drama Mood', 'Sports Highlights']
+    items: ['Weekend Action', 'Anime Night', 'Kids Safe Mode', 'K-Drama Mood', 'Sports Live']
   },
   {
     title: 'Categorii generate AI',
@@ -64,7 +64,7 @@ export default function AIHubPage() {
                     className="min-w-[170px] overflow-hidden rounded-3xl border border-white/10 bg-white/10"
                   >
                     <img
-                      src={`https://picsum.photos/400/600?random=ai-${item}-${index}`}
+                      src={"/placeholder-poster.svg"}
                       alt={item}
                       className="h-64 w-full object-cover"
                     />

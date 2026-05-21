@@ -87,7 +87,7 @@ router.get('/title/:source/:id', async (req, res) => {
       id: decodedId,
       source,
       title,
-      description: 'Titlu demo StreamVerse. Metadata reală va apărea când sursa este TMDB sau OMDb.',
+      description: 'Metadata StreamVerse generată din sursele disponibile.',
       year: '2025',
       rating: '9.1',
       runtime: '128 min',

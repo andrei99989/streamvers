@@ -1,9 +1,10 @@
 'use client';
+import { API } from '../../../../lib/api';
 
 import { use, useEffect, useState } from 'react';
 import { Music, Users, Play } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 export default function DeezerArtistPage({
   params,

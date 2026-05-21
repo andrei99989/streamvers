@@ -10,6 +10,8 @@ export function detectSource(url: string): { type: SourceType; provider: string 
     if (clean.endsWith('.m3u8')) return { type: 'hls', provider: 'hls' };
     if (clean.endsWith('.mp4')) return { type: 'mp4', provider: 'direct' };
     if (clean.endsWith('.webm')) return { type: 'webm', provider: 'direct' };
-  } catch {}
+  } catch {
+    return { type: 'iframe', provider: 'unknown' };
+  }
   return { type: 'iframe', provider: 'fallback' };
 }

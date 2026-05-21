@@ -52,7 +52,7 @@ export default function SportsHubPage() {
                   className="min-w-[180px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
                   <img
-                    src={`https://picsum.photos/500/350?random=sports-${slugify(item)}-${i}`}
+                    src={"/placeholder-wide.svg"}
                     alt={item}
                     className="h-36 w-full object-cover"
                   />

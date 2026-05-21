@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="750" viewBox="0 0 500 750">
+  <rect width="500" height="750" fill="#07070d"/>
+  <circle cx="250" cy="300" r="90" fill="#6A4CFF" opacity=".35"/>
+  <text x="250" y="430" fill="white" font-family="Arial" font-size="34" font-weight="900" text-anchor="middle">StreamVerse</text>
+  <text x="250" y="470" fill="#aaa" font-family="Arial" font-size="18" text-anchor="middle">No poster available</text>
+</svg>

@@ -1,9 +1,10 @@
 'use client';
+import { API } from '../../lib/api';
 
 import { useEffect, useState } from 'react';
 import { Flag, Trophy, CalendarDays, Users } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 export default function F1HubPage() {
   const [nextRace, setNextRace] = useState<any>(null);

@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "lint": "node --check src/server.js",
+    "build": "node --check src/server.js"
   },
   "dependencies": {
     "algoliasearch": "^5.52.1",

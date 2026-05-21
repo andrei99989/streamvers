@@ -1,14 +1,16 @@
 'use client';
+import { API } from '../../lib/api';
 
 import { useEffect, useState } from 'react';
 import { Brain, Database, Wand2 } from 'lucide-react';
 
-const API = 'http://127.0.0.1:4000';
+
 
 export default function AIMetadataPage() {
   const [contents, setContents] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [metadata, setMetadata] = useState<any>(null);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     fetch(`${API}/db/contents`)
@@ -34,12 +36,12 @@ export default function AIMetadataPage() {
     const json = await res.json();
 
     if (!res.ok) {
-      alert(json.error || 'Nu am putut face enrichment');
+      setMessage(json.error || 'Nu am putut face enrichment');
       return;
     }
 
     await fetch(`${API}/algolia/sync`, { method: 'POST' }).catch(() => null);
-    alert('Auto-Enrich salvat în Neon + Algolia actualizat');
+    setMessage('Auto-Enrich salvat în Neon + Algolia actualizat');
     loadMetadata(metadata.id);
   }
 
@@ -68,17 +70,23 @@ export default function AIMetadataPage() {
     });
 
     if (!res.ok) {
-      alert('Eroare la salvare metadata');
+      setMessage('Eroare la salvare metadata');
       return;
     }
 
     await fetch(`${API}/algolia/sync`, { method: 'POST' }).catch(() => null);
-    alert('AI Metadata salvată în Neon + Algolia actualizat');
+    setMessage('AI Metadata salvată în Neon + Algolia actualizat');
     loadMetadata(metadata.id);
   }
 
   return (
     <main className="min-h-screen bg-black p-3 text-white sm:p-6 md:p-10">
+      {message && (
+        <div className="mb-4 rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-sm font-bold text-white">
+          {message}
+        </div>
+      )}
+
       <section className="mb-5 rounded-3xl border border-white/10 bg-gradient-to-br from-[#6A4CFF]/35 to-[#00E0A8]/15 p-5 sm:p-8">
         <div className="mb-3 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-black">
           AI METADATA ENGINE

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import UniversalPlayer from '../../components/player/UniversalPlayer';
+import UniversalPlayer from '../../components/UniversalPlayer';
 
 export default function PlayerPage() {
-  const [url, setUrl] = useState('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  const [url, setUrl] = useState('');
   const [active, setActive] = useState(url);
 
   return (
@@ -31,7 +31,21 @@ export default function PlayerPage() {
       </div>
 
       <div className="mt-8 aspect-video overflow-hidden rounded-3xl border border-white/10 bg-black">
-        <UniversalPlayer url={active} />
+        <UniversalPlayer
+          source={{
+            url: active,
+            type: active.endsWith('.mp4')
+              ? 'mp4'
+              : active.endsWith('.webm')
+                ? 'webm'
+                : active.endsWith('.m3u8')
+                  ? 'hls'
+                  : 'iframe',
+            provider: 'manual',
+            title: 'Manual Player',
+          }}
+          title="Manual Player"
+        />
       </div>
     </main>
   );

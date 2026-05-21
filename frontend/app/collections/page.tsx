@@ -59,7 +59,7 @@ export default function CollectionsPage() {
             className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] transition hover:scale-[1.02] hover:border-[#6A4CFF]"
           >
             <img
-              src={`https://picsum.photos/700/400?random=collection-${i}-${slugify(name)}`}
+              src={"/placeholder-wide.svg"}
               alt={name}
               className="h-36 w-full object-cover opacity-80 group-hover:opacity-100"
             />

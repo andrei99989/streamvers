@@ -8,7 +8,7 @@ Platformă unificată de streaming premium cu player universal pentru surse auto
 - Frontend: Next.js, React, TailwindCSS, Framer Motion, Zustand
 - Backend: Node.js, Express, MongoDB/Mongoose, JWT
 - Player: video.js, hls.js, iframe responsive
-- AI: recomandări locale mock, extensibil către API-uri AI
+- AI: recomandări dinamice reale, extensibil către API-uri AI
 
 ## Instalare PC / server
 ```bash

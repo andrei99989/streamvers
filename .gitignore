@@ -7,3 +7,26 @@ frontend/.next
 backend/.env
 frontend/.env.local
 *.log
+
+# generated/cache
+.next/
+frontend/.next/
+node_modules/
+frontend/tsconfig.tsbuildinfo
+
+# local reports/scripts
+AUDIT*.txt
+RUNTIME*.txt
+API_SMOKE_TEST.txt
+backend-smoke.log
+audit-*.sh
+audit*.sh
+runtime-*.sh
+api-smoke-test.sh
+clean-*.sh
+fix-*.sh
+mobile-ui-final-fix.sh
+stats_insert.py
+
+# backups
+*.bak*

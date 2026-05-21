@@ -51,7 +51,7 @@ export default function NewReleasesPage() {
                   className="min-w-[170px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
                   <img
-                    src={`https://picsum.photos/400/600?random=new-${slugify(item)}-${i}`}
+                    src={"/placeholder-poster.svg"}
                     alt={item}
                     className="h-64 w-full object-cover"
                   />

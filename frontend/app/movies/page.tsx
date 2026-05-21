@@ -57,7 +57,7 @@ function Rows({ rows, source }: any) {
                 href={`/title/${source}/${encodeURIComponent(slugify(item))}`}
                 className="min-w-[170px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
               >
-                <img src={`https://picsum.photos/400/600?random=movie-${slugify(item)}-${i}`} alt={item} className="h-64 w-full object-cover" />
+                <img src={"/placeholder-poster.svg"} alt={item} className="h-64 w-full object-cover" />
                 <div className="p-4">
                   <div className="line-clamp-1 font-black">{item}</div>
                   <div className="mt-1 text-xs text-white/50">{type}</div>

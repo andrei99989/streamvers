@@ -1,144 +1,104 @@
 'use client';
+import { API } from '../../lib/api';
 
 import { useEffect, useState } from 'react';
-import { User, CreditCard, Shield, History, Save } from 'lucide-react';
-
-const defaults = {
-  name: 'Robert',
-  email: 'user@streamverse.local',
-  plan: 'Premium',
-  parentalControl: false,
-  pin: ''
-};
+import Link from 'next/link';
+import { UserRound, Play, Clock3 } from 'lucide-react';
 
 export default function AccountPage() {
-  const [account, setAccount] = useState<any>(defaults);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('streamverse_account');
-    if (saved) setAccount(JSON.parse(saved));
+  async function loadData() {
+    const [profilesRes, continueRes] = await Promise.all([
+      fetch(`${API}/profiles`).then((r) => r.json()),
+      fetch(`${API}/continue`).then((r) => r.json()),
+    ]);
 
-    setHistory(JSON.parse(localStorage.getItem('streamverse_continue') || '[]'));
+    setProfiles(profilesRes.items || []);
+    setHistory(continueRes.items || []);
+  }
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  function update(key: string, value: any) {
-    setAccount((prev: any) => ({ ...prev, [key]: value }));
-  }
-
-  function save() {
-    localStorage.setItem('streamverse_account', JSON.stringify(account));
-    alert('Cont salvat');
-  }
+  const mainProfile = profiles[0];
 
   return (
     <main className="min-h-screen bg-black p-6 text-white md:p-10">
-      <div className="mb-8">
-        <div className="mb-3 inline-flex rounded-full bg-[#6A4CFF]/20 px-4 py-2 text-sm font-black text-[#B8A7FF]">
-          USER CENTER
-        </div>
-
+      <section className="glass mb-8 rounded-[2.5rem] p-8">
         <h1 className="flex items-center gap-3 text-5xl font-black">
-          <User />
-          Cont / Abonament
+          <UserRound />
+          Account
         </h1>
 
-        <p className="mt-3 text-white/50">
-          Gestionează contul, planul, controlul parental și istoricul de vizionare.
-        </p>
-      </div>
+        <div className="mt-6 rounded-3xl bg-white/5 p-6">
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#6A4CFF] text-3xl font-black">
+            {mainProfile?.name?.[0]?.toUpperCase() || 'S'}
+          </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel icon={<User />} title="Profil cont">
-          <Input label="Nume" value={account.name} onChange={(v: string) => update('name', v)} />
-          <Input label="Email" value={account.email} onChange={(v: string) => update('email', v)} />
-        </Panel>
+          <h2 className="mt-4 text-3xl font-black">
+            {mainProfile?.name || 'StreamVerse User'}
+          </h2>
 
-        <Panel icon={<CreditCard />} title="Abonament">
-          <Select
-            label="Plan"
-            value={account.plan}
-            options={['Free', 'Premium', 'Family', 'Ultra']}
-            onChange={(v: string) => update('plan', v)}
-          />
-        </Panel>
+          <p className="mt-2 text-white/50">
+            Date sincronizate în Neon / PostgreSQL.
+          </p>
 
-        <Panel icon={<Shield />} title="Control parental">
-          <button
-            onClick={() => update('parentalControl', !account.parentalControl)}
-            className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3"
+          <Link
+            href="/profiles"
+            className="mt-5 inline-flex rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black"
           >
-            <span className="font-bold">Control parental</span>
-            <span className={`rounded-full px-3 py-1 text-xs font-black ${account.parentalControl ? 'bg-[#00E0A8] text-black' : 'bg-white/10 text-white/50'}`}>
-              {account.parentalControl ? 'ON' : 'OFF'}
-            </span>
-          </button>
+            Manage Profiles
+          </Link>
+        </div>
+      </section>
 
-          <Input label="PIN" value={account.pin} onChange={(v: string) => update('pin', v)} />
-        </Panel>
+      <section>
+        <h2 className="mb-5 flex items-center gap-3 text-3xl font-black">
+          <Clock3 />
+          Continue Watching
+        </h2>
 
-        <Panel icon={<History />} title="Istoric vizionare">
-          {history.length === 0 ? (
-            <div className="text-white/50">Nu există istoric încă.</div>
-          ) : (
-            <div className="space-y-3">
-              {history.slice(0, 5).map((item: any, i: number) => (
-                <div key={i} className="rounded-2xl bg-white/10 p-3">
-                  <div className="font-bold">{item.title}</div>
-                  <div className="text-xs text-white/50">{item.progress}% vizionat</div>
+        {history.length === 0 ? (
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white/50">
+            Nu ai activitate încă.
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {history.map((item) => (
+              <Link
+                key={item.id}
+                href={`/watch/${item.source_id}`}
+                className="glass overflow-hidden rounded-[2rem]"
+              >
+                {item.poster ? (
+                  <img
+                    src={item.poster}
+                    alt={item.title}
+                    className="h-48 w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-48 items-center justify-center bg-white/5">
+                    <Play size={50} className="text-white/40" />
+                  </div>
+                )}
+
+                <div className="p-5">
+                  <h3 className="line-clamp-2 text-xl font-black">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm text-white/50">
+                    Progress: {item.progress || 0}s
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </Panel>
-      </div>
-
-      <button onClick={save} className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-black">
-        <Save size={18} />
-        Salvează cont
-      </button>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
-  );
-}
-
-function Panel({ icon, title, children }: any) {
-  return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
-      <h2 className="mb-5 flex items-center gap-3 text-2xl font-black">
-        {icon}
-        {title}
-      </h2>
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
-}
-
-function Input({ label, value, onChange }: any) {
-  return (
-    <label className="block">
-      <div className="mb-2 text-sm font-bold text-white/60">{label}</div>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-2xl bg-black/40 px-4 py-3 outline-none"
-      />
-    </label>
-  );
-}
-
-function Select({ label, value, options, onChange }: any) {
-  return (
-    <label className="block">
-      <div className="mb-2 text-sm font-bold text-white/60">{label}</div>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-2xl bg-black px-4 py-3 outline-none"
-      >
-        {options.map((x: string) => (
-          <option key={x}>{x}</option>
-        ))}
-      </select>
-    </label>
   );
 }

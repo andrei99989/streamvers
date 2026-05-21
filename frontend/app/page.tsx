@@ -1,380 +1,395 @@
 'use client';
+import { apiFetch } from '../lib/apiClient';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Play,
-  Plus,
-  Search,
-  Sparkles,
-  Star,
-  Flame,
-  Film,
-  Tv,
-  Clapperboard,
-  Globe2,
-  Trophy,
-  BookOpen,
-  Music,
-  Radio,
-  Gamepad2,
-} from 'lucide-react';
+import { Play, Clock3, Heart, History, Database, Search, Sparkles } from 'lucide-react';
 
-type Item = {
-  id: string;
-  title: string;
-  subtitle?: string;
-  image: string;
-  badge?: string;
-};
-
-type Row = {
-  title: string;
-  icon?: any;
-  source: string;
-  items: Item[];
-};
-
-const poster = (seed: string) =>
-  `https://picsum.photos/seed/${encodeURIComponent(seed)}/400/600`;
-
-const wide = (seed: string) =>
-  `https://picsum.photos/seed/${encodeURIComponent(seed)}/900/500`;
-
-const movies = [
-  'Neon Galaxy',
-  'Royal Shadows',
-  'Green Signal',
-  'Midnight Max',
-  'Apex',
-  'The Matrix',
-  'Dunkirk',
-  'The Martian',
-  'Ready or Not',
-  'The Prestige',
-];
-
-const series = [
-  'The Boys',
-  'From',
-  'The Rookie',
-  'Euphoria',
-  'Law & Order',
-  'Man on Fire',
-  'Taskmaster',
-  'Beef',
-  'Widows Bay',
-  'Daredevil',
-];
-
-const anime = [
-  'One Piece',
-  'Naruto',
-  'Dragon Ball',
-  'Jujutsu Kaisen',
-  'Demon Slayer',
-  'My Hero Academia',
-  'Black Clover',
-  'Solo Leveling',
-  'Attack on Titan',
-  'Chainsaw Man',
-];
-
-function makeItems(names: string[], source: string, badge?: string): Item[] {
-  return names.map((title, i) => ({
-    id: `${source}-${i}-${title}`,
-    title,
-    subtitle: source,
-    image: poster(`${source}-${title}`),
-    badge,
-  }));
+function poster(item: any) {
+  return item.poster || item.thumbnail || item.metadata?.thumbnail || '';
 }
 
-const rows: Row[] = [
-  {
-    title: 'Continue Watching',
-    icon: Play,
-    source: 'continue',
-    items: makeItems(['Powder', 'NCIS', 'The Mummy', 'Worlds End', 'Taken 2'], 'Continue Watching'),
-  },
-  {
-    title: 'Popular - Movie',
-    icon: Flame,
-    source: 'popular-movie',
-    items: makeItems(movies, 'Popular Movie', 'IN CINEMA'),
-  },
-  {
-    title: 'Popular - Series',
-    icon: Tv,
-    source: 'popular-series',
-    items: makeItems(series, 'Popular Series'),
-  },
-  {
-    title: 'Featured - Movie',
-    icon: Star,
-    source: 'featured-movie',
-    items: makeItems(['Mortal Kombat', 'Swapped', 'Normal', 'The Drama', 'Half Mary'], 'Featured Movie', 'FEATURED'),
-  },
-  {
-    title: 'Featured - Series',
-    icon: Star,
-    source: 'featured-series',
-    items: makeItems(['Sheriff Country', 'Cops', 'Outlander', 'Your Friends Neighbors'], 'Featured Series'),
-  },
-  {
-    title: 'Trending - Movie',
-    icon: Trophy,
-    source: 'trending-movie',
-    items: makeItems(['Ready or Not 2', 'Hoppers', 'Send Help', 'Michael', 'Apex'], 'Trending Movie', 'HOT'),
-  },
-  {
-    title: 'Trending - Series',
-    icon: Trophy,
-    source: 'trending-series',
-    items: makeItems(['Pluribus', 'Alien Earth', 'Dept Q', 'His & Hers', 'For All Mankind'], 'Trending Series'),
-  },
-  {
-    title: 'Netflix - Movie',
-    icon: Clapperboard,
-    source: 'netflix-movie',
-    items: makeItems(['A History of Violence', 'Lords of Dogtown', 'Vacation', 'Apex', 'The Dark Knight'], 'Netflix Movie'),
-  },
-  {
-    title: 'Netflix - Series',
-    icon: Tv,
-    source: 'netflix-series',
-    items: makeItems(['Legends', 'AmandaLand', 'Yellowstone', 'Race Across the World'], 'Netflix Series'),
-  },
-  {
-    title: 'HBO Max - Movie',
-    icon: Film,
-    source: 'hbo-movie',
-    items: makeItems(['Harry Potter', 'The Gentlemen', 'The Matrix', 'Sully', 'The Prestige'], 'HBO Max Movie'),
-  },
-  {
-    title: 'Disney+ - Movie',
-    icon: Film,
-    source: 'disney-movie',
-    items: makeItems(['The Devil Wears Prada', 'Rental Family', 'The Martian', 'Ready or Not'], 'Disney+ Movie'),
-  },
-  {
-    title: 'Prime Video - Movie',
-    icon: Film,
-    source: 'prime-movie',
-    items: makeItems(['Red One', 'The Tomorrow War', 'Reacher', 'Bosch', 'Fallout'], 'Prime Video Movie'),
-  },
-  {
-    title: 'Apple TV+ - Movie',
-    icon: Film,
-    source: 'apple-movie',
-    items: makeItems(['The Gorge', 'F1 The Movie', 'Outcome', 'Wolfs', 'CODA'], 'Apple TV+ Movie'),
-  },
-  {
-    title: 'IMDb - Movie',
-    icon: Star,
-    source: 'imdb-movie',
-    items: makeItems(['Michael', 'The Devil Wears Prada', 'Apex', 'Half Mary', 'Resident Evil'], 'IMDb Movie'),
-  },
-  {
-    title: 'TMDB Popular - Movie',
-    icon: Globe2,
-    source: 'tmdb-popular',
-    items: makeItems(['Super Mario Bros', 'Swapped', 'Apex', 'Send Help', 'Malena'], 'TMDB Popular'),
-  },
-  {
-    title: 'Kitsu Trending - Anime',
-    icon: Sparkles,
-    source: 'kitsu-trending',
-    items: makeItems(anime, 'Kitsu Anime'),
-  },
-  {
-    title: 'Kitsu Top Airing - Anime',
-    icon: Sparkles,
-    source: 'kitsu-airing',
-    items: makeItems(['One Piece', 'Sakamoto Days', 'Kaiju No. 8', 'Blue Lock', 'Frieren'], 'Top Airing Anime'),
-  },
-  {
-    title: 'GogoAnime - Movies',
-    icon: Sparkles,
-    source: 'gogoanime-movies',
-    items: makeItems(['Suzume', 'Spirited Away', 'Your Name', 'A Silent Voice', 'Weathering With You'], 'GogoAnime'),
-  },
-  {
-    title: 'Movie Trailers - Channel',
-    icon: Play,
-    source: 'trailers',
-    items: makeItems(['Official Trailers', 'Action Trailers', 'Anime Trailers', 'Netflix Trailers'], 'Trailers', 'CHANNEL'),
-  },
-  {
-    title: 'Video Courses - Channel',
-    icon: BookOpen,
-    source: 'courses',
-    items: makeItems(['Python Developers', 'Node JS', 'Xcode Chat App', 'Beginner Tutorial'], 'Video Courses', 'COURSE'),
-  },
-  {
-    title: 'Music Videos',
-    icon: Music,
-    source: 'music',
-    items: makeItems(['Best New', 'Latest Releases', 'By Year', 'Top Music'], 'Music Videos'),
-  },
-  {
-    title: 'Radio',
-    icon: Radio,
-    source: 'radio',
-    items: makeItems(['RB Top', 'Live Radio', 'Chill Radio', 'Hits Radio'], 'Radio'),
-  },
-  {
-    title: 'Sports',
-    icon: Trophy,
-    source: 'sports',
-    items: makeItems(['Football', 'Basketball', 'Live Matches', 'Highlights'], 'Sports'),
-  },
-  {
-    title: 'Games',
-    icon: Gamepad2,
-    source: 'games',
-    items: makeItems(['Top Games', 'New Games', 'Retro Games', 'Cloud Gaming'], 'Games'),
-  },
-  {
-    title: 'Language - Movie',
-    icon: Globe2,
-    source: 'language-movie',
-    items: makeItems(['Korean Movies', 'Japanese Movies', 'Indian Movies', 'French Movies', 'Spanish Movies'], 'Language Movie'),
-  },
-  {
-    title: 'Language - Series',
-    icon: Globe2,
-    source: 'language-series',
-    items: makeItems(['Korean Series', 'Japanese Series', 'Indian Series', 'Arabic Series', 'Turkish Series'], 'Language Series'),
-  },
+function providerLabel(item: any) {
+  return item.provider || item.source_type || item.type || 'source';
+}
+
+function providerKey(item: any) {
+  return String(providerLabel(item))
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-');
+}
+
+function itemId(item: any) {
+  return item.source_id || item.id;
+}
+
+function percent(item: any) {
+  if (!item.duration || Number(item.duration) <= 0) return 0;
+
+  return Math.min(
+    100,
+    Math.round((Number(item.progress || 0) / Number(item.duration)) * 100)
+  );
+}
+
+function Row({ title, icon: Icon, href, items, showProgress = false }: any) {
+  return (
+    <section className="section-fade mt-10 sm:mt-12 scroll-mt-24">
+      <div className="mb-4 flex items-center justify-between gap-2 sm:gap-4 bg-black/40 py-2 backdrop-blur-xl">
+        <h2 className="flex items-center gap-3 text-xl font-black sm:text-2xl">
+          <Icon size={22} />
+          {title}
+        </h2>
+
+        <Link
+          href={href}
+          className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold sm:px-4 sm:text-sm transition hover:bg-white/20"
+        >
+          Vezi tot
+        </Link>
+      </div>
+
+      <div className="hide-scrollbar netflix-row flex gap-4 overflow-x-auto pb-8">
+        {items.length === 0 ? (
+          <div className="min-w-[340px] rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-white/40">
+            Nimic momentan.
+          </div>
+        ) : (
+          items.map((item: any) => {
+            const image = poster(item);
+            const provider = providerKey(item);
+            const progress = percent(item);
+
+            return (
+              <Link
+                key={`${title}-${item.id}-${item.source_id || ''}`}
+                href={`/watch/${itemId(item)}`}
+                className={`snap-card group netflix-card provider-${provider} relative min-w-[78vw] max-w-[78vw] sm:min-w-[300px] sm:max-w-[300px] md:min-w-[340px] md:max-w-[340px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#111] transition-all duration-500 active:scale-[0.98] hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_0_35px_rgba(106,76,255,.18)]`}
+              >
+                <div className="relative aspect-[16/9] sm:aspect-[16/10] overflow-hidden bg-black">
+                  {image ? (
+                    <img
+                      src={image}
+                      alt={item.title}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-white/5">
+                      <Play size={54} className="text-white/40" />
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(106,76,255,.18),transparent_60%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+                  <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase text-white">
+                    {providerLabel(item)}
+                  </div>
+
+                  {typeof item.trending_score === 'number' && (
+                    <div className="absolute right-3 top-3 rounded-full bg-[#00E0A8]/90 px-3 py-1 text-xs font-black uppercase text-black">
+                      TRENDING · {item.trending_score}
+                    </div>
+                  )}
+
+                  {showProgress && progress > 0 && (
+                    <div className="absolute bottom-0 left-0 h-1.5 w-full bg-white/10">
+                      <div
+                        className="h-full rounded-r-full bg-gradient-to-r from-[#7B5CFF] to-[#9B8CFF]"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-300 group-hover:opacity-100">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-black shadow-2xl">
+                      <Play size={28} fill="currentColor" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hero-content relative z-20 p-3 sm:p-4">
+                  <h3 className="line-clamp-2 min-h-[3.5rem] text-base font-black sm:text-lg leading-tight transition-colors duration-300 group-hover:text-[#C7BAFF]">
+                    {item.title}
+                  </h3>
+
+            {item.reason && (
+              <p className="mt-2 line-clamp-2 rounded-xl bg-[#6A4CFF]/15 px-3 py-2 text-[11px] font-bold text-[#C7BAFF]">
+                {item.reason}
+              </p>
+            )}
+
+            {typeof item.score === 'number' && item.score > 0 && (
+              <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
+                AI Score: {item.score}
+              </p>
+            )}
+
+                  <p className="mt-2 line-clamp-1 text-xs text-white/40">
+                    {item.url}
+                  </p>
+
+                  {showProgress && progress > 0 && (
+                    <p className="mt-3 text-xs font-bold text-[#B8A7FF]">
+                      {progress}% urmărit
+                    </p>
+                  )}
+                </div>
+              </Link>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+
+
+const quickGenres = [
+  'Action',
+  'Sci-Fi',
+  'Drama',
+  'Comedy',
+  'Anime',
+  'Marvel',
+  'DC',
+  'Thriller',
+];
+
+const aiPicks = [
+  'Mind-bending',
+  'Dark endings',
+  'Cyberpunk',
+  'Space',
+  'Psychological',
+  'Time travel',
 ];
 
 export default function HomePage() {
-  const [q, setQ] = useState('');
-  const router = useRouter();
+  const [continueItems, setContinueItems] = useState<any[]>([]);
+  const [trendingItems, setTrendingItems] = useState<any[]>([]);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [sources, setSources] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
-  function goSearch() {
-    if (!q.trim()) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-  }
+  useEffect(() => {
+    async function load() {
+      try {
+        const [cont, hist, fav, src, rec, trend] = await Promise.all([
+          apiFetch('/continue'),
+          apiFetch('/history'),
+          apiFetch('/favorites'),
+          apiFetch('/sources'),
+          apiFetch('/recommendations'),
+        apiFetch('/trending?limit=20'),
+        ]);
+
+        setContinueItems(cont.items || []);
+        setHistoryItems(hist.items || []);
+        setFavorites(fav.items || []);
+        setSources(src.items || []);
+        setRecommendations(rec.items || []);
+        setTrendingItems(trend.items || []);
+      } catch {
+        setContinueItems([]);
+        setHistoryItems([]);
+        setFavorites([]);
+        setSources([]);
+        setRecommendations([]);
+        setTrendingItems([]);
+      }
+    }
+
+    load();
+  }, []);
+
+  const hero = trendingItems[0] || continueItems[0] || favorites[0] || sources[0];
+  const heroImage = hero ? poster(hero) : '';
+  const heroProvider = hero ? providerLabel(hero) : '';
+  const heroTrendingScore =
+    hero && typeof hero.trending_score === 'number' ? hero.trending_score : null;
+  const heroFallbackGradient =
+    'absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(106,76,255,0.45),transparent_35%),radial-gradient(circle_at_80%_40%,rgba(0,224,168,0.18),transparent_35%),linear-gradient(135deg,#050505,#120b2f,#020202)]';
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="px-5 pb-12 pt-6 md:px-10">
-        <Hero />
-
-        <div className="mt-6 flex gap-3 rounded-3xl border border-white/10 bg-white/[0.06] p-3">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && goSearch()}
-            placeholder="Caută rapid filme, seriale, anime, canale..."
-            className="w-full bg-transparent px-3 outline-none"
+    <main className="min-h-screen bg-black px-4 pt-4 pb-44 text-white sm:p-6 md:p-10 md:pb-20">
+      <section className="glass relative mb-8 min-h-[260px] overflow-hidden rounded-[2rem] border border-white/10 p-6 shadow-[0_0_45px_rgba(106,76,255,0.22)] backdrop-blur-xl sm:min-h-[360px] md:min-h-[520px] md:p-12">
+        {heroImage ? (
+          <img
+            src={heroImage}
+            alt={hero.title}
+            className="absolute inset-0 h-full w-full scale-105 object-cover opacity-45 blur-[0.5px]"
           />
+        ) : (
+          <div className={heroFallbackGradient} />
+        )}
 
-          <button
-            onClick={goSearch}
-            className="rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black"
-          >
-            Caută
-          </button>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
 
-        <div className="mt-10 space-y-10">
-          {rows.map((row) => (
-            <MediaRow key={row.title} row={row} />
-          ))}
+        {heroTrendingScore !== null && (
+          <div className="relative z-20 mb-4 inline-flex rounded-full bg-[#00E0A8]/90 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-black">
+            HERO TRENDING SCORE · {heroTrendingScore}
+          </div>
+        )}
+
+        <div className="hero-content relative z-20 flex min-h-[220px] max-w-4xl flex-col justify-end sm:min-h-[300px] md:min-h-[420px]">
+          <div className="mb-4 inline-flex w-fit rounded-full bg-[#6A4CFF]/30 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-[#C7BAFF]">
+            {heroProvider || 'STREAMVERSE'} · Dynamic Hero
+          </div>
+
+          <h1 className="text-3xl font-black leading-[1] sm:text-6xl md:text-8xl">
+            {hero?.title || 'StreamVerse Premium'}
+          </h1>
+
+          <p className="mt-5 max-w-3xl text-lg font-medium text-white/70">
+            {hero?.description || 'Cel mai relevant conținut trending este promovat automat în hero, cu scor AI și date live din platformă.'}
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href={hero ? `/watch/${itemId(hero)}` : '/sources'}
+              className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 font-black text-black transition hover:scale-105"
+            >
+              <Play size={18} />
+              Play
+            </Link>
+
+            <Link
+              href="/sources"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-black transition hover:scale-105"
+            >
+              <Database size={18} />
+              Sources
+            </Link>
+
+            <Link
+              href="/search"
+              className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-black transition hover:bg-white/20"
+            >
+              <Search size={18} />
+              Search
+            </Link>
+          </div>
         </div>
       </section>
-    </main>
-  );
-}
 
-function Hero() {
-  return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#6A4CFF] via-[#14102b] to-[#003d3d] p-8 shadow-2xl md:p-12">
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{ backgroundImage: `url(${wide('streamverse-hero')})`, backgroundSize: 'cover' }}
-      />
-
-      <div className="relative max-w-4xl">
-        <div className="mb-5 tracking-[0.45em] text-xs font-black text-[#00E0A8]">
-          STREAMVERSE ORIGINAL
-        </div>
-
-        <h1 className="max-w-3xl text-5xl font-black leading-none md:text-7xl">
-          Platformă premium pentru toate sursele tale video
-        </h1>
-
-        <p className="mt-6 max-w-2xl text-white/70">
-          Player universal, recomandări AI, catalog cinematic, categorii live,
-          filme, seriale, anime, sport, muzică și canale într-un singur loc.
-        </p>
-
-        <div className="mt-8 flex flex-wrap gap-3">
+      <section
+        className="stats-mobile-grid mt-5"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        {[
+          ['Continue', continueItems.length, '/continue-watching'],
+          ['Favorites', favorites.length, '/watchlist'],
+          ['Sources', sources.length, '/sources'],
+          ['History', historyItems.length, '/history'],
+        ].map(([label, value, href]) => (
           <Link
-            href="/search"
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 font-black text-black"
+            key={label}
+            href={String(href)}
+            className="stats-mobile-card border border-white/10 bg-white/[0.04] transition hover:border-[#6A4CFF]"
+            style={{
+              minHeight: 92,
+              borderRadius: 20,
+              padding: 12,
+              width: 'calc(50% - 4px)',
+              maxWidth: 'calc(50% - 4px)',
+              flex: '0 0 calc(50% - 4px)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
           >
-            <Search size={18} />
-            Caută
-          </Link>
-
-          <button className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-black backdrop-blur">
-            <Plus size={18} />
-            Adaugă sursă
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MediaRow({ row }: { row: Row }) {
-  const Icon = row.icon || Film;
-
-  return (
-    <section>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="rounded-xl bg-white/10 p-2">
-          <Icon size={18} />
-        </div>
-
-        <h2 className="text-2xl font-black">{row.title}</h2>
-      </div>
-
-      <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
-        {row.items.map((item) => (
-          <Link
-            key={item.id}
-            href={`/title/${row.source}/${encodeURIComponent(item.id)}`}
-            className="group min-w-[145px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.03] md:min-w-[185px]"
-          >
-            <div className="relative h-[220px] bg-white/5 md:h-[280px]">
-              <img
-                src={item.image}
-                alt={item.title}
-                className="h-full w-full object-cover transition duration-300 group-hover:opacity-80"
-              />
-
-              {item.badge && (
-                <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-[10px] font-black">
-                  {item.badge}
-                </div>
-              )}
+            <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">
+              StreamVerse Stats
             </div>
-
-            <div className="p-4">
-              <div className="line-clamp-1 font-black">{item.title}</div>
-              <div className="mt-1 line-clamp-1 text-xs text-white/50">
-                {item.subtitle}
-              </div>
-            </div>
+            <div className="mt-2 text-2xl font-black">{String(value)}</div>
+            <div className="mt-1 text-xs text-white/50">{String(label)}</div>
           </Link>
         ))}
-      </div>
-    </section>
+      </section>
+
+      <section className="mb-10 space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-black sm:text-2xl text-white">
+            AI Discovery Hub
+          </h2>
+
+          <div className="rounded-full bg-[#6A4CFF]/20 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#B8A7FF]">
+            Smart discovery
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <h3 className="mb-4 text-base font-black sm:text-lg">
+              Trending Genres
+            </h3>
+
+            <div className="flex flex-wrap gap-2">
+              {quickGenres.map((genre) => (
+                <Link
+                  key={genre}
+                  href={`/search?q=${encodeURIComponent(genre)}`}
+                  className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold sm:px-4 sm:text-sm text-white/70 transition hover:bg-[#6A4CFF] hover:text-white"
+                >
+                  {genre}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <h3 className="mb-4 text-base font-black sm:text-lg">
+              AI Picks
+            </h3>
+
+            <div className="flex flex-wrap gap-2">
+              {aiPicks.map((pick) => (
+                <Link
+                  key={pick}
+                  href={`/search?q=${encodeURIComponent(pick)}`}
+                  className="rounded-full bg-[#6A4CFF]/15 px-4 py-2 text-sm font-bold text-[#C7BAFF] transition hover:bg-[#6A4CFF] hover:text-white"
+                >
+                  {pick}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Row
+        title="Trending Now"
+        icon={Sparkles}
+        href="/trending"
+        items={trendingItems.length ? trendingItems : sources}
+      />
+
+      <Row
+        title="Recommended For You"
+        icon={Sparkles}
+        href="/sources"
+        items={recommendations.length ? recommendations : sources}
+      />
+
+      <Row
+        title="Continue Watching"
+        icon={Clock3}
+        href="/continue-watching"
+        items={continueItems}
+        showProgress
+      />
+
+      <Row title="Favorites" icon={Heart} href="/watchlist" items={favorites} />
+      <Row title="Watch History" icon={History} href="/history" items={historyItems} />
+      <Row title="Recently Added Sources" icon={Database} href="/sources" items={sources} />
+    </main>
   );
 }
