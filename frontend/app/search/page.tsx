@@ -255,15 +255,25 @@ export default function SearchPage() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {['Inception', 'Fight Club', 'Liceeni', 'Anime', 'MP4', 'YouTube'].map((term) => (
-                  <button
-                    key={term}
-                    onClick={() => onSearch(term)}
-                    className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white/70 transition hover:bg-[#6A4CFF] hover:text-white"
-                  >
-                    {term}
-                  </button>
-                ))}
+                {items.slice(0, 8).map((item) => {
+                  const term = item.title || provider(item);
+
+                  return (
+                    <button
+                      key={`${item.id || item.source_id}-${term}`}
+                      onClick={() => onSearch(term)}
+                      className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white/70 transition hover:bg-[#6A4CFF] hover:text-white"
+                    >
+                      {term}
+                    </button>
+                  );
+                })}
+
+                {items.length === 0 && (
+                  <span className="text-sm text-white/35">
+                    Sugestiile apar după ce există surse salvate.
+                  </span>
+                )}
               </div>
             </div>
 
