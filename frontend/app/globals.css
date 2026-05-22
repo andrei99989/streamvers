@@ -289,3 +289,30 @@ main {
     overflow: visible !important;
   }
 }
+
+/* Mobile polish */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.tap-card {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.tap-card:active {
+  transform: scale(0.98);
+}

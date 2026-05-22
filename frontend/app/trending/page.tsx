@@ -43,7 +43,7 @@ export default function TrendingPage() {
   }, []);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-black p-4 pb-44 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen overflow-x-hidden bg-black px-4 pb-32 pt-24 text-white md:px-10 md:pb-20 md:pt-10">
       <section className="mb-8 rounded-[2rem] border border-white/10 bg-gradient-to-br from-red-500/30 to-[#6A4CFF]/25 p-5 md:p-8">
         <div className="mb-3 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-black">
           TRENDING ENGINE
@@ -77,7 +77,7 @@ export default function TrendingPage() {
         <section>
           <h2 className="mb-4 text-2xl font-black">Trending acum</h2>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => {
               const image = poster(item);
 
@@ -85,7 +85,7 @@ export default function TrendingPage() {
                 <Link
                   key={`${item.id}-${item.url || ''}`}
                   href={`/watch/${itemId(item)}`}
-                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+                  className="tap-card group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
                   <div className="relative h-52 overflow-hidden bg-white/5 md:h-64">
                     {image ? (
@@ -111,8 +111,8 @@ export default function TrendingPage() {
                     )}
                   </div>
 
-                  <div className="p-4">
-                    <div className="line-clamp-2 min-h-[3rem] font-black">
+                  <div className="p-3">
+                    <div className="line-clamp-1 text-sm font-black">
                       {item.title || 'Untitled'}
                     </div>
 

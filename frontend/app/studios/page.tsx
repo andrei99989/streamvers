@@ -91,7 +91,7 @@ export default function StudiosPage() {
                     <Link
                       key={`${studio}-${item.id}-${item.source_id || item.url || ''}`}
                       href={`/watch/${itemId(item)}`}
-                      className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+                      className="tap-card group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-white/5">
                         {image ? (
