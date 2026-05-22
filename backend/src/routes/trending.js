@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
         c.poster,
         c.backdrop,
         c.type AS content_type,
-        s.provider,
+        COALESCE(NULLIF(s.provider, ''), s.source_type, 'source') AS provider,
         s.source_type AS type,
         s.url,
         s.url AS embed_url,
