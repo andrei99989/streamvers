@@ -1,21 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Clapperboard, BookOpen, Microscope, Globe2 } from 'lucide-react';
+import { Clapperboard, BookOpen, Microscope, Globe2, Play } from 'lucide-react';
+import { apiFetch } from '../../lib/apiClient';
 
-const rows = [
-  ['Documentare populare', 'Popular', ['Planet Earth', 'Human Story', 'Ocean Life', 'Space Journey', 'Ancient Worlds']],
-  ['Natură & Animale', 'Nature', ['Wild Africa', 'Deep Ocean', 'Rainforest', 'Arctic Life', 'Big Cats']],
-  ['Istorie', 'History', ['Roman Empire', 'World War', 'Ancient Egypt', 'Medieval Times', 'Lost Cities']],
-  ['Știință', 'Science', ['Cosmos', 'Quantum World', 'AI Revolution', 'Future Tech', 'Human Brain']],
-  ['Educație', 'Education', ['Learn Physics', 'World Geography', 'Math Basics', 'Coding 101', 'Languages']],
-];
+function poster(item: any) {
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+}
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+function itemId(item: any) {
+  return item.source_id || item.id;
 }
 
 export default function DocumentaryHubPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const res = await apiFetch('/recommendations?category=documentary&limit=40');
+        if (alive) setItems(res.items || []);
+      } catch {
+        if (alive) setItems([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-black p-6 text-white md:p-10">
       <section className="mb-10 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#6A4CFF]/35 to-black p-8">
@@ -29,7 +50,7 @@ export default function DocumentaryHubPage() {
         </h1>
 
         <p className="mt-4 max-w-3xl text-white/70">
-          Documentare premium, educație, natură, istorie, știință și cursuri video.
+          Documentare și conținut educațional din date reale salvate în backend.
         </p>
       </section>
 
@@ -39,34 +60,49 @@ export default function DocumentaryHubPage() {
         <Card icon={<Globe2 />} title="World" />
       </div>
 
-      <div className="space-y-10">
-        {rows.map(([title, source, items]: any) => (
-          <section key={title}>
-            <h2 className="mb-4 text-2xl font-black">{title}</h2>
+      {loading ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Se încarcă documentare...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Nu există încă documentare salvate.
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          {items.map((item) => {
+            const image = poster(item);
 
-            <div className="flex gap-4 overflow-x-auto pb-3">
-              {items.map((item: string, i: number) => (
-                <Link
-                  key={item}
-                  href={`/title/documentary/${encodeURIComponent(slugify(item))}`}
-                  className="min-w-[170px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
-                >
-                  <img
-                    src={"/placeholder-poster.svg"}
-                    alt={item}
-                    className="h-64 w-full object-cover"
-                  />
+            return (
+              <Link
+                key={`${item.id}-${item.source_id || item.url || ''}`}
+                href={`/watch/${itemId(item)}`}
+                className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+              >
+                <div className="relative h-64 overflow-hidden bg-white/5">
+                  {image ? (
+                    <img
+                      src={image}
+                      alt={item.title || 'Documentary'}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <Play size={48} className="text-white/30" />
+                    </div>
+                  )}
+                </div>
 
-                  <div className="p-4">
-                    <div className="line-clamp-1 font-black">{item}</div>
-                    <div className="mt-1 text-xs text-white/50">{source}</div>
+                <div className="p-4">
+                  <div className="line-clamp-2 min-h-[3rem] font-black">
+                    {item.title || 'Untitled'}
                   </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </main>
   );
 }
@@ -76,7 +112,7 @@ function Card({ icon, title }: any) {
     <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
       <div className="text-[#00E0A8]">{icon}</div>
       <div className="mt-4 text-2xl font-black">{title}</div>
-      <div className="mt-2 text-white/50">Curated catalog</div>
+      <div className="mt-2 text-white/50">Date reale din backend</div>
     </div>
   );
 }
