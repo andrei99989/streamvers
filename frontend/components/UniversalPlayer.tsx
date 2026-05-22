@@ -254,6 +254,32 @@ export default function UniversalPlayer({
     setShowResume(false);
   }
 
+  async function saveIframeContinue() {
+    if (!source.sourceId) return;
+
+    try {
+      await fetch(`${API}/continue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceId: String(source.sourceId),
+          contentId: String(source.contentId || ''),
+          title: source.title || title,
+          url: source.url,
+          provider,
+          sourceType: finalType,
+          poster: source.poster || '',
+          progress: 5,
+          duration: 120,
+          metadata: {
+            autosave: true,
+            iframe: true,
+          },
+        }),
+      });
+    } catch {}
+  }
+
   async function saveContinue(video: HTMLVideoElement) {
     if (!source.sourceId) return;
     if (!video.duration || Number.isNaN(video.duration)) return;
@@ -287,6 +313,12 @@ export default function UniversalPlayer({
     }
   }
 
+  useEffect(() => {
+    if (!['mp4', 'webm', 'hls'].includes(String(finalType))) {
+      saveIframeContinue();
+    }
+  }, [source.sourceId, source.url, finalType]);
+
   if (!source?.url) {
     return (
       <div className="flex aspect-video items-center justify-center rounded-[2rem] bg-black text-white/50">
@@ -295,7 +327,7 @@ export default function UniversalPlayer({
     );
   }
 
-  if (finalType === 'iframe') {
+  if (!['mp4', 'webm', 'hls'].includes(String(finalType))) {
     return (
       <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-white/10 bg-black shadow-[0_0_80px_rgba(106,76,255,0.25)]">
         <iframe
