@@ -1,32 +1,22 @@
 import Link from 'next/link';
 import { Compass, Play, Search, Flame, Star } from 'lucide-react';
+import { apiFetch } from '../../../lib/apiClient';
 
-const collections: Record<string, any[]> = {
-  'popular-movie': [
-    'Inception',
-    'Interstellar',
-    'Fight Club',
-    'The Dark Knight',
-    'John Wick',
-    'Avatar',
-  ],
-  'trending-movie': [
-    'Dune',
-    'Civil War',
-    'The Batman',
-    'Oppenheimer',
-    'Top Gun Maverick',
-    'Joker',
-  ],
-  'kitsu-trending-anime': [
-    'One Piece',
-    'Solo Leveling',
-    'Jujutsu Kaisen',
-    'Attack on Titan',
-    'Naruto',
-    'Demon Slayer',
-  ],
-};
+function titleFromSlug(slug: string) {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
+    .join(' ');
+}
+
+function poster(item: any) {
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+}
+
+function itemId(item: any) {
+  return item.source_id || item.id;
+}
 
 export default async function DiscoverSlugPage({
   params,
@@ -34,18 +24,16 @@ export default async function DiscoverSlugPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const title = titleFromSlug(slug);
 
-  const title = slug
-    .split('-')
-    .map((x) => x.charAt(0).toUpperCase() + x.slice(1))
-    .join(' ');
+  let items: any[] = [];
 
-  const data = collections[slug] || [
-    'StreamVerse Premiere',
-    'Premium Collection',
-    'Trending Source',
-    'AI Recommended',
-  ];
+  try {
+    const res = await apiFetch(`/search?q=${encodeURIComponent(title)}&limit=24`);
+    items = res.items || res.results || [];
+  } catch {
+    items = [];
+  }
 
   return (
     <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
@@ -60,7 +48,7 @@ export default async function DiscoverSlugPage({
         </h1>
 
         <p className="mt-5 max-w-3xl text-white/60">
-          Catalog premium cu recomandări AI, filme, anime, surse video și colecții organizate cinematic.
+          Rezultate reale din backend pentru această colecție.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -72,7 +60,7 @@ export default async function DiscoverSlugPage({
           </Link>
 
           <Link
-            href="/search"
+            href={`/search?q=${encodeURIComponent(title)}`}
             className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-black"
           >
             <Search size={18} />
@@ -84,47 +72,65 @@ export default async function DiscoverSlugPage({
       <section>
         <div className="mb-6 flex items-center gap-3">
           <Flame className="text-[#6A4CFF]" />
-          <h2 className="text-3xl font-black">Trending Catalog</h2>
+          <h2 className="text-3xl font-black">Rezultate</h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6">
-          {data.map((item, index) => (
-            <Link
-              key={item}
-              href="/sources"
-              className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-[0_0_35px_rgba(106,76,255,.12)] transition hover:-translate-y-1 hover:border-[#6A4CFF]"
-            >
-              <div className="relative aspect-[2/3] overflow-hidden bg-white/5">
-                <img
-                  src={"/placeholder-poster.svg"}
-                  alt={item}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
+        {items.length === 0 ? (
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-white/50">
+            Nu există încă rezultate pentru această colecție.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6">
+            {items.map((item) => {
+              const image = poster(item);
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+              return (
+                <Link
+                  key={`${item.id}-${item.source_id || item.url || ''}`}
+                  href={`/watch/${itemId(item)}`}
+                  className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-[0_0_35px_rgba(106,76,255,.12)] transition hover:-translate-y-1 hover:border-[#6A4CFF]"
+                >
+                  <div className="relative aspect-[2/3] overflow-hidden bg-white/5">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={item.title || title}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Play size={46} className="text-white/30" />
+                      </div>
+                    )}
 
-                <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase">
-                  HD
-                </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black">
-                    <Play fill="currentColor" />
+                    <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase">
+                      {item.provider || item.type || 'source'}
+                    </div>
+
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black">
+                        <Play fill="currentColor" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="p-4">
-                <h3 className="line-clamp-2 font-black">{item}</h3>
+                  <div className="p-4">
+                    <h3 className="line-clamp-2 font-black">
+                      {item.title || 'Untitled'}
+                    </h3>
 
-                <div className="mt-3 flex items-center gap-2 text-sm text-[#B8A7FF]">
-                  <Star size={14} fill="currentColor" />
-                  Premium Recommendation
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+                    <div className="mt-3 flex items-center gap-2 text-sm text-[#B8A7FF]">
+                      <Star size={14} fill="currentColor" />
+                      Backend result
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
     </main>
   );
