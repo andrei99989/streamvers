@@ -1,85 +1,125 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Building2 } from 'lucide-react';
+import { Building2, Play } from 'lucide-react';
+import { apiFetch } from '../../lib/apiClient';
 
-const groups = [
-  {
-    title: 'SUA / America de Nord',
-    studios: ['Lionsgate','MGM','Blumhouse','Legendary','Skydance','A24','Laika','Illumination','WildBrain','Nelvana']
-  },
-  {
-    title: 'Asia',
-    studios: ['Toei Animation','Madhouse','MAPPA','Studio Ghibli','Bones','Studio Pierrot','Studio Dragon','CJ ENM','Tencent Pictures','Yash Raj Films']
-  },
-  {
-    title: 'Europa',
-    studios: ['BBC Studios','ITV Studios','Aardman','Gaumont','Pathé','StudioCanal','Constantin Film','Filmax','Lux Vide','Castel Film']
-  },
-  {
-    title: 'Africa',
-    studios: ['FilmOne Studios','EbonyLife Studios','Triggerfish','Videovision','Mavin Records','SuperSport Studios']
-  },
-  {
-    title: 'America de Sud',
-    studios: ['Globo Filmes','RecordTV Studios','TV Pinguim','Copa Studio','Pol-ka','Fabula']
-  },
-  {
-    title: 'Australia & Oceania',
-    studios: ['Animal Logic','Flying Bark','Princess Bento','SLR Productions','Weta Workshop','Weta FX']
-  }
-];
+function poster(item: any) {
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+}
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+function itemId(item: any) {
+  return item.source_id || item.id;
 }
 
 export default function StudiosPage() {
+  const [sources, setSources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const res = await apiFetch('/sources');
+        if (alive) setSources(res.items || []);
+      } catch {
+        if (alive) setSources([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, any[]>();
+
+    for (const item of sources) {
+      const key = item.metadata?.studio || item.metadata?.provider || item.provider || item.type || 'Unknown';
+      const label = String(key || 'Unknown');
+
+      if (!map.has(label)) map.set(label, []);
+      map.get(label)!.push(item);
+    }
+
+    return Array.from(map.entries()).slice(0, 12);
+  }, [sources]);
+
   return (
-    <main className="min-h-screen bg-black p-6 text-white md:p-10">
-      <div className="mb-8">
+    <main className="min-h-screen overflow-x-hidden bg-black px-4 pb-32 pt-24 text-white md:px-10 md:pb-20 md:pt-10">
+      <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 md:p-8">
         <div className="mb-3 inline-flex rounded-full bg-[#00E0A8]/20 px-4 py-2 text-sm font-black text-[#00E0A8]">
           STUDIO CATALOG
         </div>
 
-        <h1 className="flex items-center gap-3 text-5xl font-black">
+        <h1 className="flex items-center gap-3 text-4xl font-black md:text-7xl">
           <Building2 />
           Studios
         </h1>
 
-        <p className="mt-3 max-w-3xl text-white/50">
-          Explorează conținut după studiouri, regiuni și producători.
+        <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/70 md:text-lg">
+          Conținut grupat după provider/studio din date reale salvate în backend.
         </p>
-      </div>
+      </section>
 
-      <div className="space-y-8">
-        {groups.map((group) => (
-          <section key={group.title}>
-            <h2 className="mb-4 text-3xl font-black">{group.title}</h2>
+      {loading ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Se încarcă studiourile...
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Nu există încă surse salvate.
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {groups.map(([studio, items]) => (
+            <section key={studio}>
+              <h2 className="mb-5 text-3xl font-black sm:text-4xl">{studio}</h2>
 
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-              {group.studios.map((studio, i) => (
-                <Link
-                  key={studio}
-                  href={`/discover/studio-${slugify(studio)}`}
-                  className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] transition hover:scale-[1.02] hover:border-[#6A4CFF]"
-                >
-                  <img
-                    src={"/placeholder-wide.svg"}
-                    alt={studio}
-                    className="h-32 w-full object-cover"
-                  />
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                {items.slice(0, 12).map((item) => {
+                  const image = poster(item);
 
-                  <div className="p-4">
-                    <div className="font-black">{studio}</div>
-                    <div className="mt-1 text-xs text-white/50">{group.title}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+                  return (
+                    <Link
+                      key={`${studio}-${item.id}-${item.source_id || item.url || ''}`}
+                      href={`/watch/${itemId(item)}`}
+                      className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+                    >
+                      <div className="relative aspect-[16/10] overflow-hidden bg-white/5">
+                        {image ? (
+                          <img
+                            src={image}
+                            alt={item.title || studio}
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <Play size={42} className="text-white/30" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-3">
+                        <div className="line-clamp-1 text-sm font-black">
+                          {item.title || 'Untitled'}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
     </main>
   );
 }
