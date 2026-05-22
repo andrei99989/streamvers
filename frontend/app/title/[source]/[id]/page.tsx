@@ -194,7 +194,7 @@ export default function TitlePage({
         </div>
       )}
 
-      <main className="min-h-screen bg-black pb-36 text-white md:pb-20">
+      <main className="min-h-screen bg-black pb-56 text-white md:pb-20">
         <section className="relative min-h-[680px] overflow-hidden">
           {meta.backdrop && (
             <img

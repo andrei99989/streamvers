@@ -36,7 +36,7 @@ export default function WatchlistPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
       <section className="mb-8 rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-red-500/20 to-white/[0.03] p-8">
         <div className="mb-3 inline-flex rounded-full bg-red-500/20 px-4 py-2 text-sm font-black text-red-300">
           FAVORITES

@@ -223,7 +223,7 @@ export default function WatchPage({
         </div>
       )}
 
-      <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+      <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
         <Link href="/" className="mb-6 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-black">
           <ArrowLeft size={18} />
           Back

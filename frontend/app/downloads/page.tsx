@@ -37,7 +37,7 @@ export default function DownloadsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
       <section className="glass mb-8 rounded-[2.5rem] p-8">
         <h1 className="flex items-center gap-3 text-5xl font-black">
           <Download />

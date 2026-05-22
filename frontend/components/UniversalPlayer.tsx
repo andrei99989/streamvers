@@ -32,7 +32,7 @@ function detectProvider(src = '') {
   if (value.includes('youtube.com') || value.includes('youtu.be')) return 'youtube';
   if (value.includes('vimeo.com')) return 'vimeo';
   if (value.includes('dailymotion.com') || value.includes('dai.ly')) return 'dailymotion';
-  if (value.includes('tiktok.com')) return 'tiktok';
+  if (value.includes('tiktok.com') || value.includes('vm.tiktok.com')) return 'tiktok';
   if (value.includes('terabox.com') || value.includes('1024tera.com')) return 'terabox';
   if (value.includes('rumble.com')) return 'rumble';
   if (value.includes('twitch.tv')) return 'twitch';
@@ -95,7 +95,7 @@ function normalizeEmbed(src = '') {
       return id ? `https://www.dailymotion.com/embed/video/${id}?autoplay=1` : value;
     }
 
-    if (host.includes('vm.tiktok.com')) {
+    if (host.includes('vm.tiktok.com') || host === 'vm.tiktok.com') {
       return '';
     }
 

@@ -148,7 +148,7 @@ export default function AddonsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black p-6 pb-32 text-white md:p-10">
+    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10">
       {message && (
         <div className="fixed left-1/2 top-6 z-[9999] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 px-6 py-4 font-black shadow-2xl backdrop-blur-xl">
           {message}

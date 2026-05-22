@@ -11,7 +11,7 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   return (
-    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
       <section className="mx-auto max-w-3xl rounded-[2.5rem] border border-red-500/20 bg-red-500/5 p-8 text-center backdrop-blur-xl">
         <AlertTriangle className="mx-auto text-red-400" size={64} />
 

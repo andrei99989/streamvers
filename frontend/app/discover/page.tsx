@@ -59,7 +59,7 @@ const quickLinks = [
 
 export default function DiscoverPage() {
   return (
-    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
       <section className="relative mb-8 overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-[#6A4CFF]/30 via-white/[0.04] to-black p-8 shadow-[0_0_80px_rgba(106,76,255,0.25)] md:p-12">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,224,168,.22),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(106,76,255,.28),transparent_40%)]" />
 

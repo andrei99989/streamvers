@@ -136,7 +136,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <button onClick={() => setOpen(false)} className="rounded-xl bg-white/10 px-3 py-2">✕</button>
         </div>
 
-        <div className="min-h-screen overflow-visible px-4 py-6 pb-40">
+        <div className="min-h-screen overflow-visible px-4 py-6 pb-56">
           {sections.map((section) => (
             <div key={section.title} className="mb-8">
               <h2 className="mb-3 px-3 text-xs font-bold uppercase tracking-[0.2em] text-white/30">{section.title}</h2>

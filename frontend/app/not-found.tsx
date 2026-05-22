@@ -4,7 +4,7 @@ import { Home, Search } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
       <section className="mx-auto max-w-3xl rounded-[2.5rem] border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl">
         <div className="text-7xl font-black text-[#6A4CFF]">404</div>
 
