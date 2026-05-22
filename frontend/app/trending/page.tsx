@@ -43,7 +43,7 @@ export default function TrendingPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-black p-6 pb-40 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen overflow-x-hidden bg-black p-4 pb-44 text-white md:p-10 md:pb-20">
       <section className="mb-8 rounded-[2rem] border border-white/10 bg-gradient-to-br from-red-500/30 to-[#6A4CFF]/25 p-5 md:p-8">
         <div className="mb-3 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-black">
           TRENDING ENGINE
@@ -54,7 +54,7 @@ export default function TrendingPage() {
           Trending
         </h1>
 
-        <p className="mt-4 max-w-3xl text-white/70">
+        <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/70 md:text-lg">
           Conținut popular calculat din Neon pe baza istoricului, favoritelor, continue watching și surselor recente.
         </p>
       </section>
@@ -77,7 +77,7 @@ export default function TrendingPage() {
         <section>
           <h2 className="mb-4 text-2xl font-black">Trending acum</h2>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
             {items.map((item) => {
               const image = poster(item);
 
