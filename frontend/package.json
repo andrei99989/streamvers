@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint || true",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:termux": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true next dev -p 3000",
+    "start:prod": "next start -p 3000"
   },
   "dependencies": {
     "@types/node": "^22.10.7",

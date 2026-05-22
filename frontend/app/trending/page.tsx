@@ -6,7 +6,7 @@ import { Flame, Star, Trophy, Play } from 'lucide-react';
 import { apiFetch } from '../../lib/apiClient';
 
 function poster(item: any) {
-  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '/placeholder-poster.svg';
 }
 
 function itemId(item: any) {
@@ -43,13 +43,13 @@ export default function TrendingPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-black p-6 text-white md:p-10">
-      <section className="mb-10 rounded-[2rem] border border-white/10 bg-gradient-to-br from-red-500/30 to-[#6A4CFF]/25 p-8">
+    <main className="min-h-screen bg-black p-6 pb-40 text-white md:p-10 md:pb-20">
+      <section className="mb-8 rounded-[2rem] border border-white/10 bg-gradient-to-br from-red-500/30 to-[#6A4CFF]/25 p-5 md:p-8">
         <div className="mb-3 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-black">
           TRENDING ENGINE
         </div>
 
-        <h1 className="flex items-center gap-3 text-5xl font-black md:text-7xl">
+        <h1 className="flex items-center gap-3 text-4xl font-black md:text-7xl">
           <Flame />
           Trending
         </h1>
@@ -59,7 +59,7 @@ export default function TrendingPage() {
         </p>
       </section>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-3">
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <Info icon={<Flame />} title="Trending" />
         <Info icon={<Trophy />} title="Popularitate reală" />
         <Info icon={<Star />} title="Neon-backed" />
@@ -77,7 +77,7 @@ export default function TrendingPage() {
         <section>
           <h2 className="mb-4 text-2xl font-black">Trending acum</h2>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
             {items.map((item) => {
               const image = poster(item);
 
@@ -87,7 +87,7 @@ export default function TrendingPage() {
                   href={`/watch/${itemId(item)}`}
                   className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
-                  <div className="relative h-64 overflow-hidden bg-white/5">
+                  <div className="relative h-52 overflow-hidden bg-white/5 md:h-64">
                     {image ? (
                       <img
                         src={image}
@@ -134,9 +134,9 @@ export default function TrendingPage() {
 
 function Info({ icon, title }: any) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
+    <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 md:p-6">
       <div className="text-[#00E0A8]">{icon}</div>
-      <div className="mt-4 text-2xl font-black">{title}</div>
+      <div className="mt-3 text-xl font-black md:text-2xl">{title}</div>
       <div className="mt-2 text-white/50">Date reale din backend</div>
     </div>
   );
