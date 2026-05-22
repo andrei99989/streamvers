@@ -1,22 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Baby, ShieldCheck } from 'lucide-react';
+import { Baby, ShieldCheck, Play } from 'lucide-react';
+import { apiFetch } from '../../lib/apiClient';
 
-const rows = [
-  ['Kids Movies', ['Toy World', 'Magic Forest', 'Space Kids', 'Animal Friends', 'Little Heroes']],
-  ['Cartoon Network', ['Dexter Lab', 'Powerpuff', 'Ben 10', 'Adventure Time', 'Regular Show']],
-  ['Jetix / Fox Kids', ['Galactic Rangers', 'Super Spies', 'Dragon Team', 'Retro Heroes', 'Action Kids']],
-  ['Nickelodeon', ['Sponge World', 'Teen Squad', 'Funny Friends', 'School Life', 'Nick Classics']],
-  ['Boomerang / Cartoonito', ['Tom & Jerry', 'Scooby Adventures', 'Baby Cartoons', 'Classic Shorts', 'Family Fun']],
-  ['Safe Learning', ['Numbers', 'Alphabet', 'Science Kids', 'Animals', 'Music Lessons']],
-];
+function poster(item: any) {
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+}
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+function itemId(item: any) {
+  return item.source_id || item.id;
 }
 
 export default function KidsHubPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const res = await apiFetch('/recommendations?category=kids&limit=40');
+        if (alive) setItems(res.items || []);
+      } catch {
+        if (alive) setItems([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-black p-6 text-white md:p-10">
       <section className="mb-10 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#00E0A8]/25 to-[#6A4CFF]/25 p-8">
@@ -31,38 +51,53 @@ export default function KidsHubPage() {
         </h1>
 
         <p className="mt-4 max-w-3xl text-white/70">
-          Conținut pentru copii: cartoons, educație, canale family-friendly și colecții retro.
+          Conținut pentru copii din date reale salvate în backend.
         </p>
       </section>
 
-      <div className="space-y-10">
-        {rows.map(([title, items]: any) => (
-          <section key={title}>
-            <h2 className="mb-4 text-2xl font-black">{title}</h2>
+      {loading ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Se încarcă Kids Hub...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Nu există încă surse kids salvate.
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          {items.map((item) => {
+            const image = poster(item);
 
-            <div className="flex gap-4 overflow-x-auto pb-3">
-              {items.map((item: string, i: number) => (
-                <Link
-                  key={item}
-                  href={`/title/kids/${encodeURIComponent(slugify(item))}`}
-                  className="min-w-[160px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
-                >
-                  <img
-                    src={"/placeholder-poster.svg"}
-                    alt={item}
-                    className="h-60 w-full object-cover"
-                  />
+            return (
+              <Link
+                key={`${item.id}-${item.source_id || item.url || ''}`}
+                href={`/watch/${itemId(item)}`}
+                className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+              >
+                <div className="relative h-60 overflow-hidden bg-white/5">
+                  {image ? (
+                    <img
+                      src={image}
+                      alt={item.title || 'Kids item'}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <Play size={48} className="text-white/30" />
+                    </div>
+                  )}
+                </div>
 
-                  <div className="p-4">
-                    <div className="line-clamp-1 font-black">{item}</div>
-                    <div className="mt-1 text-xs text-white/50">{title}</div>
+                <div className="p-4">
+                  <div className="line-clamp-2 min-h-[3rem] font-black">
+                    {item.title || 'Untitled'}
                   </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </main>
   );
 }
