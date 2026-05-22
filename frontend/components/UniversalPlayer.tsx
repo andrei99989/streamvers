@@ -301,7 +301,8 @@ export default function UniversalPlayer({
         <iframe
           src={finalUrl}
           className="h-full w-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
           allowFullScreen
           title={title}
           referrerPolicy="strict-origin-when-cross-origin"
