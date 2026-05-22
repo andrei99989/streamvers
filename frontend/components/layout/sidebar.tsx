@@ -72,7 +72,7 @@ export default function Sidebar() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed left-1 top-3 z-[80] rounded-lg border border-white/10 bg-black/75 px-2 py-1.5 text-xs backdrop-blur sm:left-4 sm:top-4 sm:px-3 sm:py-2 sm:text-base"
+          className="fixed left-2 top-20 z-[9999] rounded-lg border border-white/10 bg-black/75 px-2 py-1.5 text-xs backdrop-blur sm:left-4 sm:top-4 sm:px-3 sm:py-2 sm:text-base"
         >
           ☰
         </button>

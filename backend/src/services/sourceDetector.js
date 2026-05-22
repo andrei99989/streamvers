@@ -18,5 +18,5 @@ export function detectSource(inputUrl) {
   if (lower.endsWith('.m3u8')) return { type: 'hls', provider: 'hls' };
   if (lower.endsWith('.mp4')) return { type: 'mp4', provider: 'direct' };
   if (lower.endsWith('.webm')) return { type: 'webm', provider: 'direct' };
-  return { type: 'iframe', provider: 'fallback' };
+  return { type: 'external', provider: 'external' };
 }

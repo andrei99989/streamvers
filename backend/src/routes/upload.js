@@ -20,7 +20,7 @@ function detectSourceType(url = '') {
   if (value.endsWith('.mp4')) return 'mp4';
   if (value.endsWith('.webm')) return 'webm';
 
-  return 'iframe';
+  return 'external';
 }
 
 router.post('/', async (req, res) => {

@@ -25,7 +25,7 @@ function detectSource(url: string) {
   if (clean.endsWith('.mp4')) return 'mp4';
   if (clean.endsWith('.webm')) return 'webm';
 
-  return 'iframe';
+  return 'external';
 }
 
 export default function UploadPage() {

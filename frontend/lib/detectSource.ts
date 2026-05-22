@@ -1,5 +1,5 @@
 const iframeDomains = ['youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 'tiktok.com', 'terabox.com', 'rumble.com'];
-export type SourceType = 'iframe' | 'mp4' | 'webm' | 'hls';
+export type SourceType = 'iframe' | 'mp4' | 'webm' | 'hls' | 'external';
 export function detectSource(url: string): { type: SourceType; provider: string } {
   try {
     const parsed = new URL(url);
@@ -11,7 +11,7 @@ export function detectSource(url: string): { type: SourceType; provider: string 
     if (clean.endsWith('.mp4')) return { type: 'mp4', provider: 'direct' };
     if (clean.endsWith('.webm')) return { type: 'webm', provider: 'direct' };
   } catch {
-    return { type: 'iframe', provider: 'unknown' };
+    return { type: 'external', provider: 'invalid' };
   }
-  return { type: 'iframe', provider: 'fallback' };
+  return { type: 'external', provider: 'external' };
 }

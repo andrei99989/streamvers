@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db/postgres.js';
 import { getSourceThumbnail } from '../utils/thumbnails.js';
+import { enrichWithTmdb } from '../services/tmdbService.js';
 
 const router = Router();
 
@@ -27,16 +28,23 @@ function detectProvider(url = '') {
 function detectType(url = '') {
   const clean = String(url).toLowerCase();
 
+  if (clean.includes('youtube.com') || clean.includes('youtu.be')) return 'iframe';
+  if (clean.includes('vimeo.com')) return 'iframe';
+  if (clean.includes('dailymotion.com') || clean.includes('dai.ly')) return 'iframe';
+  if (clean.includes('tiktok.com')) return 'iframe';
+  if (clean.includes('terabox.com') || clean.includes('1024tera.com')) return 'iframe';
+  if (clean.includes('rumble.com')) return 'iframe';
+
   if (clean.endsWith('.m3u8')) return 'hls';
   if (clean.endsWith('.mp4')) return 'mp4';
   if (clean.endsWith('.webm')) return 'webm';
 
-  return 'iframe';
+  return 'external';
 }
 
 function normalizeSourceType(provider, type) {
-  if (['mp4', 'webm', 'hls'].includes(type)) return type;
-  return provider || 'iframe';
+  if (['mp4', 'webm', 'hls', 'iframe', 'external'].includes(type)) return type;
+  return 'external';
 }
 
 async function ensureColumns() {
@@ -103,10 +111,12 @@ router.post('/', async (req, res) => {
   const finalProvider = provider || detectProvider(url);
   const finalType = type || detectType(url);
   const finalSourceType = normalizeSourceType(finalProvider, finalType);
-  const finalPoster = poster || getSourceThumbnail(url) || '';
   const finalTitle = title || `${finalProvider.toUpperCase()} Source`;
   const finalCategory = category || 'custom';
-
+  const tmdb = await enrichWithTmdb(finalTitle, finalCategory).catch(() => null);
+  const finalPoster = poster || tmdb?.poster || getSourceThumbnail(url) || '';
+  const finalBackdrop = backdrop || tmdb?.backdrop || '';
+  const finalDescription = description || tmdb?.description || '';
   const metadata = {
     provider: finalProvider,
     sourceType: finalSourceType,
@@ -114,6 +124,7 @@ router.post('/', async (req, res) => {
     category: finalCategory,
     thumbnail: finalPoster,
     createdFrom: 'sources-api',
+    ...(tmdb?.metadata || {}),
   };
 
   try {
@@ -128,10 +139,10 @@ router.post('/', async (req, res) => {
       `,
       [
         finalTitle,
-        description || '',
+        finalDescription,
         finalPoster,
-        backdrop || '',
-        finalCategory,
+        finalBackdrop,
+        tmdb?.type || finalCategory,
         metadata,
       ]
     );

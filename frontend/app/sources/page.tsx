@@ -26,13 +26,20 @@ function detectProvider(url: string) {
 }
 
 function detectType(url: string) {
-  const value = String(url || '').toLowerCase();
+  const value = url.toLowerCase();
+
+  if (value.includes('youtube.com') || value.includes('youtu.be')) return 'iframe';
+  if (value.includes('vimeo.com')) return 'iframe';
+  if (value.includes('dailymotion.com') || value.includes('dai.ly')) return 'iframe';
+  if (value.includes('tiktok.com')) return 'iframe';
+  if (value.includes('terabox.com') || value.includes('1024tera.com')) return 'iframe';
+  if (value.includes('rumble.com')) return 'iframe';
 
   if (value.endsWith('.m3u8')) return 'hls';
   if (value.endsWith('.mp4')) return 'mp4';
   if (value.endsWith('.webm')) return 'webm';
 
-  return 'iframe';
+  return 'external';
 }
 
 function getYoutubeId(url: string) {
@@ -71,6 +78,18 @@ function getCardThumbnail(item: any) {
   return '';
 }
 
+function getHeroBackground(item: any) {
+  return (
+    item.backdrop ||
+    item.metadata?.tmdb?.backdrop ||
+    item.poster ||
+    item.metadata?.tmdb?.poster ||
+    item.thumbnail ||
+    item.metadata?.thumbnail ||
+    getCardThumbnail(item)
+  );
+}
+
 function getItemProvider(item: any) {
   return item.provider || item.source_type || item.type || detectProvider(item.url || '');
 }
@@ -83,6 +102,16 @@ function getItemType(item: any) {
 }
 
 function getPreviewEmbed(item: any) {
+  const url = item.url || item.embedUrl || item.embed_url || '';
+
+  const yt = getYoutubeId(url);
+  if (yt) return `https://www.youtube.com/embed/${yt}`;
+
+  if (url.includes('vimeo.com')) {
+    const id = url.split('/').pop()?.split('?')[0];
+    return id ? `https://player.vimeo.com/video/${id}` : '';
+  }
+
   return '';
 }
 export default function SourcesPage() {
@@ -252,7 +281,7 @@ export default function SourcesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black p-6 pb-36 text-white md:p-10 md:pb-20">
+    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
       <section className="mb-8 rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-6 md:p-8">
         <div className="mb-3 inline-flex rounded-full bg-[#6A4CFF]/20 px-4 py-2 text-sm font-black text-[#B8A7FF]">
           CUSTOM SOURCES
@@ -325,7 +354,12 @@ export default function SourcesPage() {
 
               <h2 className="text-4xl font-black">{active.title}</h2>
 
-              <p className="mt-2 break-all text-sm text-white/40">{active.url}</p>
+              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-white/50">
+                {active.description ||
+                  active.metadata?.tmdb?.overview ||
+                  active.metadata?.wikipedia?.extract ||
+                  `${getItemProvider(active).toUpperCase()} source`}
+              </p>
             </div>
           </div>
 
@@ -360,19 +394,21 @@ export default function SourcesPage() {
                 key={item.id}
                 className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] transition duration-300 hover:-translate-y-1 hover:border-[#6A4CFF] hover:shadow-[0_0_40px_rgba(106,76,255,0.35)]"
               >
-                <div className="relative aspect-video overflow-hidden bg-black"><div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                  {previewEmbed ? (
+                <div className="relative aspect-video overflow-hidden bg-black" style={{ minHeight: 260 }}><div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                  {previewEmbed && false ? (
                     <iframe
                       src={previewEmbed}
                       className="h-full w-full scale-[1.02]"
-                      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                      sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                      referrerPolicy="strict-origin-when-cross-origin"
                       allowFullScreen
                     />
                   ) : thumbnail ? (
                     <img
                       src={thumbnail}
                       alt={item.title}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-white/5">
@@ -382,14 +418,14 @@ export default function SourcesPage() {
 
                   <button
                     onClick={() => playItem(item)}
-                    className="absolute inset-0 flex items-center justify-center bg-black/10"
+                    className="absolute inset-0 z-30 flex items-center justify-center bg-black/10"
                   >
                     <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/90 text-black shadow-2xl backdrop-blur-xl transition group-hover:scale-110">
                       <Play size={46} fill="currentColor" />
                     </div>
                   </button>
 
-                  <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                  <div className="absolute left-4 top-4 z-40 flex flex-wrap gap-2">
                     <span className="rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase text-white">
                       {provider}
                     </span>
@@ -400,13 +436,13 @@ export default function SourcesPage() {
                   </div>
                 </div>
 
-                <div className="p-5">
-                  <h2 className="line-clamp-2 min-h-[4rem] text-2xl font-black leading-tight">
+                <div className="relative z-40 p-6">
+                  <h2 className="relative z-40 mt-2 line-clamp-2 text-2xl font-black leading-tight tracking-tight text-white">
                     {item.title}
                   </h2>
 
-                  <p className="mt-3 line-clamp-2 break-all text-sm text-white/40">
-                    {item.url}
+                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-white/60">
+                    {item.description || item.metadata?.tmdb?.overview || item.metadata?.wikipedia?.extract || `${provider.toUpperCase()} source`}
                   </p>
 
                   <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase text-white/50">
@@ -423,10 +459,10 @@ export default function SourcesPage() {
                     </span>
                   </div>
 
-                  <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="mt-6 grid grid-cols-[1fr_1fr_auto] gap-3">
                     <button
                       onClick={() => playItem(item)}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-black"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 font-black text-black"
                     >
                       <Play size={16} />
                       Play
@@ -434,7 +470,7 @@ export default function SourcesPage() {
 
                     <button
                       onClick={() => addToLibrary(item)}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#6A4CFF] px-4 py-3 font-black"
                     >
                       <Library size={16} />
                       Library
@@ -442,7 +478,7 @@ export default function SourcesPage() {
 
                     <button
                       onClick={() => remove(item.id)}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 font-black"
+                      className="inline-flex items-center justify-center rounded-2xl bg-red-500 px-4 py-3 font-black"
                     >
                       <Trash2 size={16} />
                     </button>
