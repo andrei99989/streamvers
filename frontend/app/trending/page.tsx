@@ -1,21 +1,47 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Flame, Star, Trophy } from 'lucide-react';
+import { Flame, Star, Trophy, Play } from 'lucide-react';
+import { apiFetch } from '../../lib/apiClient';
 
-const rows = [
-  ['Cele mai vizionate azi', 'Today', ['Apex', 'Dragon Ball Z', 'The Matrix', 'From', 'The Boys']],
-  ['Populare săptămâna asta', 'Weekly', ['Naruto', 'Iron Man', 'Ready or Not', 'Breaking Bad', 'One Piece']],
-  ['Top IMDb', 'IMDb', ['The Godfather', 'The Dark Knight', 'Interstellar', 'Parasite', 'Whiplash']],
-  ['Top TMDB', 'TMDB', ['Dune', 'The Martian', 'Gladiator', 'Avatar', 'Inception']],
-  ['Trending Anime', 'Anime', ['Jujutsu Kaisen', 'Demon Slayer', 'Solo Leveling', 'Bleach', 'Frieren']],
-];
+function poster(item: any) {
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+}
 
-function slugify(v: string) {
-  return v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+function itemId(item: any) {
+  return item.source_id || item.id;
+}
+
+function providerLabel(item: any) {
+  return item.provider || item.type || item.content_type || 'source';
 }
 
 export default function TrendingPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const res = await apiFetch('/trending?limit=50');
+        if (alive) setItems(res.items || []);
+      } catch {
+        if (alive) setItems([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-black p-6 text-white md:p-10">
       <section className="mb-10 rounded-[2rem] border border-white/10 bg-gradient-to-br from-red-500/30 to-[#6A4CFF]/25 p-8">
@@ -25,48 +51,83 @@ export default function TrendingPage() {
 
         <h1 className="flex items-center gap-3 text-5xl font-black md:text-7xl">
           <Flame />
-          Trending / Popular / Top Rated
+          Trending
         </h1>
 
         <p className="mt-4 max-w-3xl text-white/70">
-          Cele mai vizionate, populare săptămânal, top IMDb, TMDB și anime trending.
+          Conținut popular calculat din Neon pe baza istoricului, favoritelor, continue watching și surselor recente.
         </p>
       </section>
 
       <div className="mb-8 grid gap-4 md:grid-cols-3">
         <Info icon={<Flame />} title="Trending" />
-        <Info icon={<Trophy />} title="Popular" />
-        <Info icon={<Star />} title="Top Rated" />
+        <Info icon={<Trophy />} title="Popularitate reală" />
+        <Info icon={<Star />} title="Neon-backed" />
       </div>
 
-      <div className="space-y-10">
-        {rows.map(([title, source, items]: any) => (
-          <section key={title}>
-            <h2 className="mb-4 text-2xl font-black">{title}</h2>
+      {loading ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Se încarcă trending...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Nu există încă suficiente date pentru trending.
+        </div>
+      ) : (
+        <section>
+          <h2 className="mb-4 text-2xl font-black">Trending acum</h2>
 
-            <div className="flex gap-4 overflow-x-auto pb-3">
-              {items.map((item: string, i: number) => (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+            {items.map((item) => {
+              const image = poster(item);
+
+              return (
                 <Link
-                  key={item}
-                  href={`/title/trending/${encodeURIComponent(slugify(item))}`}
-                  className="min-w-[170px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+                  key={`${item.id}-${item.url || ''}`}
+                  href={`/watch/${itemId(item)}`}
+                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
-                  <img
-                    src={"/placeholder-poster.svg"}
-                    alt={item}
-                    className="h-64 w-full object-cover"
-                  />
+                  <div className="relative h-64 overflow-hidden bg-white/5">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={item.title || 'Trending item'}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Play size={48} className="text-white/30" />
+                      </div>
+                    )}
+
+                    <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase">
+                      {providerLabel(item)}
+                    </div>
+
+                    {typeof item.trending_score === 'number' && (
+                      <div className="absolute right-3 top-3 rounded-full bg-[#00E0A8]/90 px-3 py-1 text-xs font-black text-black">
+                        {item.trending_score}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="p-4">
-                    <div className="line-clamp-1 font-black">{item}</div>
-                    <div className="mt-1 text-xs text-white/50">{source}</div>
+                    <div className="line-clamp-2 min-h-[3rem] font-black">
+                      {item.title || 'Untitled'}
+                    </div>
+
+                    {item.description && (
+                      <p className="mt-2 line-clamp-2 text-xs text-white/50">
+                        {item.description}
+                      </p>
+                    )}
                   </div>
                 </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -76,7 +137,7 @@ function Info({ icon, title }: any) {
     <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
       <div className="text-[#00E0A8]">{icon}</div>
       <div className="mt-4 text-2xl font-black">{title}</div>
-      <div className="mt-2 text-white/50">Ranking module</div>
+      <div className="mt-2 text-white/50">Date reale din backend</div>
     </div>
   );
 }
