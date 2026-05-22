@@ -1,22 +1,47 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, Star, Flame, CalendarDays } from 'lucide-react';
+import { Sparkles, Star, Flame, CalendarDays, Play } from 'lucide-react';
+import { apiFetch } from '../../lib/apiClient';
 
-const rows = [
-  ['Kitsu Trending', 'Trending', ['One Piece', 'Dragon Ball Z', 'Naruto', 'Jujutsu Kaisen', 'Demon Slayer']],
-  ['Top Airing Anime', 'Airing', ['Sakamoto Days', 'Blue Lock', 'Kaiju No. 8', 'Frieren', 'Solo Leveling']],
-  ['Most Popular Anime', 'Popular', ['Attack on Titan', 'Death Note', 'Black Clover', 'Bleach', 'Hunter x Hunter']],
-  ['Highest Rated Anime', 'Rating', ['Fullmetal Alchemist', 'Steins Gate', 'Vinland Saga', 'Monster', 'Code Geass']],
-  ['Anime Movies', 'Movie', ['Your Name', 'Suzume', 'Spirited Away', 'A Silent Voice', 'Weathering With You']],
-  ['Anime Seasons', 'Season', ['Winter Anime', 'Spring Anime', 'Summer Anime', 'Fall Anime', 'OVA / ONA']],
-];
+function poster(item: any) {
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+}
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+function itemId(item: any) {
+  return item.source_id || item.id;
+}
+
+function providerLabel(item: any) {
+  return item.provider || item.type || item.content_type || 'anime';
 }
 
 export default function AnimeHubPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const res = await apiFetch('/recommendations?category=anime&limit=40');
+        if (alive) setItems(res.items || []);
+      } catch {
+        if (alive) setItems([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-black p-6 text-white md:p-10">
       <section className="mb-10 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#6A4CFF]/40 to-[#00E0A8]/10 p-8">
@@ -30,44 +55,73 @@ export default function AnimeHubPage() {
         </h1>
 
         <p className="mt-4 max-w-3xl text-white/70">
-          Anime trending, top airing, movies, seasons, OVA, ONA și colecții japoneze.
+          Recomandări anime generate din date reale salvate în backend.
         </p>
       </section>
 
       <div className="mb-8 grid gap-4 md:grid-cols-3">
         <Info icon={<Flame />} title="Trending" />
-        <Info icon={<Star />} title="Top Rated" />
-        <Info icon={<CalendarDays />} title="Seasons" />
+        <Info icon={<Star />} title="Recomandări" />
+        <Info icon={<CalendarDays />} title="Dinamic" />
       </div>
 
-      <div className="space-y-10">
-        {rows.map(([title, source, items]: any) => (
-          <section key={title}>
-            <h2 className="mb-4 text-2xl font-black">{title}</h2>
+      {loading ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Se încarcă anime hub...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Nu există încă date anime salvate.
+        </div>
+      ) : (
+        <section>
+          <h2 className="mb-4 text-2xl font-black">Anime recomandat</h2>
 
-            <div className="flex gap-4 overflow-x-auto pb-3">
-              {items.map((item: string, i: number) => (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+            {items.map((item) => {
+              const image = poster(item);
+
+              return (
                 <Link
-                  key={item}
-                  href={`/title/anime/${encodeURIComponent(slugify(item))}`}
-                  className="min-w-[170px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+                  key={`${item.id}-${item.source_id || item.url || ''}`}
+                  href={`/watch/${itemId(item)}`}
+                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
-                  <img
-                    src={"/placeholder-poster.svg"}
-                    alt={item}
-                    className="h-64 w-full object-cover"
-                  />
+                  <div className="relative h-64 overflow-hidden bg-white/5">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={item.title || 'Anime item'}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Play size={48} className="text-white/30" />
+                      </div>
+                    )}
+
+                    <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase">
+                      {providerLabel(item)}
+                    </div>
+                  </div>
 
                   <div className="p-4">
-                    <div className="line-clamp-1 font-black">{item}</div>
-                    <div className="mt-1 text-xs text-white/50">{source}</div>
+                    <div className="line-clamp-2 min-h-[3rem] font-black">
+                      {item.title || 'Untitled'}
+                    </div>
+
+                    {item.reason && (
+                      <p className="mt-2 line-clamp-2 text-xs text-[#C7BAFF]">
+                        {item.reason}
+                      </p>
+                    )}
                   </div>
                 </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -77,7 +131,7 @@ function Info({ icon, title }: any) {
     <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
       <div className="text-[#00E0A8]">{icon}</div>
       <div className="mt-4 text-2xl font-black">{title}</div>
-      <div className="mt-2 text-white/50">Anime module</div>
+      <div className="mt-2 text-white/50">Date reale din backend</div>
     </div>
   );
 }
