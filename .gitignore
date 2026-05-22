@@ -30,3 +30,6 @@ stats_insert.py
 
 # backups
 *.bak*
+
+frontend@1.0.0
+next
