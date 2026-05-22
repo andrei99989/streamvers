@@ -174,31 +174,30 @@ export default function HomePage() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
 
   useEffect(() => {
-    async function load() {
+    async function safeLoad(path: string) {
       try {
-        const [cont, hist, fav, src, rec, trend] = await Promise.all([
-          apiFetch('/continue'),
-          apiFetch('/history'),
-          apiFetch('/favorites'),
-          apiFetch('/sources'),
-          apiFetch('/recommendations'),
-        apiFetch('/trending?limit=20'),
-        ]);
-
-        setContinueItems(cont.items || []);
-        setHistoryItems(hist.items || []);
-        setFavorites(fav.items || []);
-        setSources(src.items || []);
-        setRecommendations(rec.items || []);
-        setTrendingItems(trend.items || []);
+        return await apiFetch(path);
       } catch {
-        setContinueItems([]);
-        setHistoryItems([]);
-        setFavorites([]);
-        setSources([]);
-        setRecommendations([]);
-        setTrendingItems([]);
+        return { items: [] };
       }
+    }
+
+    async function load() {
+      const [cont, hist, fav, src, rec, trend] = await Promise.all([
+        safeLoad('/continue'),
+        safeLoad('/history'),
+        safeLoad('/favorites'),
+        safeLoad('/sources'),
+        safeLoad('/recommendations'),
+        safeLoad('/trending?limit=20'),
+      ]);
+
+      setContinueItems(cont.items || []);
+      setHistoryItems(hist.items || []);
+      setFavorites(fav.items || []);
+      setSources(src.items || []);
+      setRecommendations(rec.items || []);
+      setTrendingItems(trend.items || []);
     }
 
     load();

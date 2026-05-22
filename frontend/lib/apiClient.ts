@@ -9,12 +9,7 @@ export async function apiFetch<T = any>(
   path: string,
   options: ApiOptions = {}
 ): Promise<T> {
-  const {
-    timeoutMs = 12000,
-    retries = 1,
-    ...fetchOptions
-  } = options;
-
+  const { timeoutMs = 12000, retries = 1, ...fetchOptions } = options;
   const url = path.startsWith('http') ? path : `${API}${path}`;
 
   let lastError: any;
@@ -48,7 +43,7 @@ export async function apiFetch<T = any>(
   throw lastError;
 }
 
-export async function apiPost<T = any>(path: string, body: any): Promise<T> {
+export async function apiPost<T = any>(path: string, body: any = {}): Promise<T> {
   return apiFetch<T>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -62,7 +57,7 @@ export async function apiDelete<T = any>(path: string): Promise<T> {
   });
 }
 
-export async function apiPatch<T = any>(path: string, body: any): Promise<T> {
+export async function apiPatch<T = any>(path: string, body: any = {}): Promise<T> {
   return apiFetch<T>(path, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
