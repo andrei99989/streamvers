@@ -1,82 +1,165 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Trophy, CalendarDays, PlayCircle, Radio } from 'lucide-react';
+import { Trophy, CalendarDays, PlayCircle, Radio, Play } from 'lucide-react';
+import { apiFetch } from '../../lib/apiClient';
 
-const rows = [
-  ['Live Matches', 'Live', ['Football Live', 'NBA Live', 'F1 Live', 'Tennis Live', 'Boxing Live']],
-  ['Football', 'Soccer', ['Premier League', 'Champions League', 'La Liga', 'Serie A', 'Liga 1']],
-  ['Basketball', 'NBA', ['NBA Highlights', 'Lakers', 'Warriors', 'Celtics', 'Bulls']],
-  ['Formula 1', 'F1', ['Race Calendar', 'Qualifying', 'Highlights', 'Drivers', 'Teams']],
-  ['Highlights', 'Replay', ['Best Goals', 'Top Plays', 'Match Recaps', 'Press Conferences', 'Documentaries']],
-];
+function poster(item: any) {
+  return item.poster || item.backdrop || item.thumbnail || item.metadata?.thumbnail || '';
+}
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+function itemId(item: any) {
+  return item.source_id || item.id;
+}
+
+function isSports(item: any) {
+  const haystack = [
+    item.title,
+    item.description,
+    item.content_type,
+    item.type,
+    item.provider,
+    item.metadata?.category,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return /(sport|sports|football|nba|basket|f1|formula|tennis|boxing|liga|match|live)/i.test(haystack);
 }
 
 export default function SportsHubPage() {
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [sources, setSources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const [rec, src] = await Promise.all([
+          apiFetch('/recommendations?category=sports&limit=40'),
+          apiFetch('/sources'),
+        ]);
+
+        if (!alive) return;
+
+        setRecommendations(rec.items || []);
+        setSources(src.items || []);
+      } catch {
+        if (!alive) return;
+        setRecommendations([]);
+        setSources([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const items = useMemo(() => {
+    const merged = [...recommendations, ...sources.filter(isSports)];
+    const unique = new Map();
+
+    for (const item of merged) {
+      const key = String(item.source_id || item.id || item.url || item.title);
+      if (!unique.has(key)) unique.set(key, item);
+    }
+
+    return [...unique.values()].slice(0, 40);
+  }, [recommendations, sources]);
+
   return (
-    <main className="min-h-screen bg-black p-6 text-white md:p-10">
-      <section className="mb-10 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#00E0A8]/25 to-[#6A4CFF]/20 p-8">
+    <main className="min-h-screen overflow-x-hidden bg-black px-4 pb-32 pt-24 text-white md:px-10 md:pb-20 md:pt-10">
+      <section className="mb-8 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#00E0A8]/25 to-[#6A4CFF]/20 p-6 md:p-8">
         <div className="mb-3 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-black">
           SPORTS ENGINE
         </div>
 
-        <h1 className="flex items-center gap-3 text-5xl font-black md:text-7xl">
+        <h1 className="flex items-center gap-3 text-4xl font-black md:text-7xl">
           <Trophy />
           Sports Hub
         </h1>
 
-        <p className="mt-4 max-w-3xl text-white/70">
-          Sport live, highlights, calendare, canale sportive și hub-uri pentru fotbal, NBA, F1 și multe altele.
+        <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/70 md:text-lg">
+          Sport live, highlights și canale sportive din date reale salvate în backend.
         </p>
       </section>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-3">
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <InfoCard icon={<CalendarDays />} title="Fixtures" />
         <InfoCard icon={<PlayCircle />} title="Highlights" />
         <InfoCard icon={<Radio />} title="Live Channels" />
       </div>
 
-      <div className="space-y-10">
-        {rows.map(([title, source, items]: any) => (
-          <section key={title}>
-            <h2 className="mb-4 text-2xl font-black">{title}</h2>
+      {loading ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Se încarcă Sports Hub...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-white/50">
+          Nu există încă surse sportive salvate.
+        </div>
+      ) : (
+        <section>
+          <h2 className="mb-5 text-3xl font-black sm:text-4xl">Sport</h2>
 
-            <div className="flex gap-4 overflow-x-auto pb-3">
-              {items.map((item: string, i: number) => (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            {items.map((item) => {
+              const image = poster(item);
+
+              return (
                 <Link
-                  key={item}
-                  href={`/title/sports/${encodeURIComponent(slugify(item))}`}
-                  className="min-w-[180px] overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
+                  key={`${item.id}-${item.source_id || item.url || ''}`}
+                  href={`/watch/${itemId(item)}`}
+                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/10 transition hover:scale-[1.02]"
                 >
-                  <img
-                    src={"/placeholder-wide.svg"}
-                    alt={item}
-                    className="h-36 w-full object-cover"
-                  />
+                  <div className="relative aspect-[16/10] overflow-hidden bg-white/5">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={item.title || 'Sports item'}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Play size={42} className="text-white/30" />
+                      </div>
+                    )}
 
-                  <div className="p-4">
-                    <div className="line-clamp-1 font-black">{item}</div>
-                    <div className="mt-1 text-xs text-white/50">{source}</div>
+                    <div className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[10px] font-black uppercase">
+                      {item.provider || item.type || item.content_type || 'sports'}
+                    </div>
+                  </div>
+
+                  <div className="p-3">
+                    <div className="line-clamp-1 text-sm font-black">
+                      {item.title || 'Untitled'}
+                    </div>
                   </div>
                 </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
 
 function InfoCard({ icon, title }: any) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
+    <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 md:p-6">
       <div className="text-[#00E0A8]">{icon}</div>
-      <div className="mt-4 text-2xl font-black">{title}</div>
-      <div className="mt-2 text-white/50">Sports module</div>
+      <div className="mt-3 text-xl font-black md:text-2xl">{title}</div>
+      <div className="mt-2 text-white/50">Date reale din backend</div>
     </div>
   );
 }
