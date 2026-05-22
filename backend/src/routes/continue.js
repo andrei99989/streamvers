@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db/postgres.js';
+import { getSourceThumbnail } from '../utils/thumbnails.js';
 
 const router = Router();
 
@@ -27,13 +28,43 @@ router.get('/', async (_req, res) => {
     await ensureTable();
 
     const result = await query(`
-      SELECT *
-      FROM continue_watching
-      ORDER BY updated_at DESC
+      SELECT
+        cw.*,
+        c.poster AS content_poster,
+        c.backdrop AS content_backdrop,
+        c.description AS content_description,
+        c.metadata AS content_metadata
+      FROM continue_watching cw
+      LEFT JOIN contents c ON c.id::text = cw.content_id::text
+      ORDER BY cw.updated_at DESC
       LIMIT 200
     `);
 
-    res.json({ items: result.rows });
+    const items = result.rows.map((row) => {
+      const metadata = {
+        ...(row.content_metadata || {}),
+        ...(row.metadata || {}),
+      };
+
+      const poster =
+        row.poster ||
+        row.content_backdrop ||
+        row.content_poster ||
+        metadata?.tmdb?.backdrop ||
+        metadata?.tmdb?.poster ||
+        metadata?.thumbnail ||
+        getSourceThumbnail(row.url) ||
+        '';
+
+      return {
+        ...row,
+        poster,
+        description: row.content_description || metadata?.tmdb?.overview || '',
+        metadata,
+      };
+    });
+
+    res.json({ items });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -78,7 +109,7 @@ router.post('/', async (req, res) => {
         url = EXCLUDED.url,
         provider = EXCLUDED.provider,
         source_type = EXCLUDED.source_type,
-        poster = EXCLUDED.poster,
+        poster = COALESCE(NULLIF(EXCLUDED.poster, ''), continue_watching.poster),
         progress = EXCLUDED.progress,
         duration = EXCLUDED.duration,
         metadata = EXCLUDED.metadata,

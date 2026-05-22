@@ -16,6 +16,20 @@ function getPoster(item: any) {
   );
 }
 
+function providerGradient(provider: string) {
+  const key = String(provider || '').toLowerCase();
+
+  if (key.includes('tiktok')) return 'from-pink-500/40 via-black to-cyan-400/30';
+  if (key.includes('terabox')) return 'from-blue-500/40 via-black to-sky-400/20';
+  if (key.includes('rumble')) return 'from-green-500/40 via-black to-lime-400/20';
+  if (key.includes('dailymotion')) return 'from-blue-600/40 via-black to-white/10';
+  if (key.includes('youtube')) return 'from-red-600/40 via-black to-white/10';
+  if (key.includes('vimeo')) return 'from-sky-500/40 via-black to-blue-400/20';
+  if (key.includes('mp4') || key.includes('hls') || key.includes('webm')) return 'from-[#6A4CFF]/40 via-black to-[#00E0A8]/20';
+
+  return 'from-[#6A4CFF]/35 via-black to-white/10';
+}
+
 function getDescription(item: any) {
   return (
     item.description ||
@@ -126,8 +140,18 @@ export default function ContinueWatchingPage() {
                       className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center bg-white/5">
-                      <Play size={70} className="text-white/40" />
+                    <div className={`flex h-full items-center justify-center bg-gradient-to-br ${providerGradient(provider)}`}>
+                      <div className="text-center">
+                        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/10 text-white shadow-2xl backdrop-blur-xl">
+                          <Play size={42} fill="currentColor" />
+                        </div>
+                        <div className="text-3xl font-black uppercase tracking-tight text-white/90">
+                          {provider}
+                        </div>
+                        <div className="mt-2 text-xs font-black uppercase tracking-[0.24em] text-white/40">
+                          StreamVerse Source
+                        </div>
+                      </div>
                     </div>
                   )}
 

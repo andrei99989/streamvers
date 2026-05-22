@@ -95,6 +95,10 @@ function normalizeEmbed(src = '') {
       return id ? `https://www.dailymotion.com/embed/video/${id}?autoplay=1` : value;
     }
 
+    if (host.includes('vm.tiktok.com')) {
+      return '';
+    }
+
     if (host.includes('tiktok.com') && url.pathname.includes('/video/')) {
       const id = url.pathname.split('/video/')[1]?.split('?')[0];
       return id ? `https://www.tiktok.com/embed/v2/${id}` : value;
@@ -328,6 +332,29 @@ export default function UniversalPlayer({
   }
 
   if (!['mp4', 'webm', 'hls'].includes(String(finalType))) {
+    if (!finalUrl) {
+      return (
+        <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-pink-500/30 via-black to-cyan-400/20 shadow-[0_0_80px_rgba(106,76,255,0.25)]">
+          <div className="text-center">
+            <div className="text-3xl font-black uppercase text-white">
+              {provider}
+            </div>
+            <p className="mt-3 px-6 text-sm font-bold text-white/50">
+              Această sursă nu permite embed direct.
+            </p>
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-black text-white"
+            >
+              Deschide sursa
+            </a>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-white/10 bg-black shadow-[0_0_80px_rgba(106,76,255,0.25)]">
         <iframe
