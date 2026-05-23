@@ -158,6 +158,29 @@ export default function SourcesPage() {
     }
   }
 
+
+  async function backfillContentKeys() {
+    try {
+      setMessage('⏳ Generez content keys...');
+      const data = await apiPost('/sources/backfill-content-keys', {});
+      setMessage(`✅ Content keys generate: ${data.updated || 0}/${data.scanned || 0}`);
+      await loadSources();
+    } catch {
+      setMessage('❌ Backfill content keys eșuat');
+    }
+  }
+
+  async function mergeDuplicates() {
+    try {
+      setMessage('⏳ Curăț duplicate...');
+      const data = await apiPost('/sources/merge-duplicates', {});
+      setMessage(`✅ Duplicate șterse: ${data.removed || 0}, grupuri: ${data.groups || 0}`);
+      await loadSources();
+    } catch {
+      setMessage('❌ Merge duplicates eșuat');
+    }
+  }
+
   async function enrichMetadata() {
     try {
       setMessage('⏳ Enrich metadata rulează...');
@@ -317,6 +340,14 @@ export default function SourcesPage() {
           <button onClick={normalizeProviders} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
             Normalize Providers
           </button>
+          
+          <button onClick={backfillContentKeys} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
+            Backfill Keys
+          </button>
+          <button onClick={mergeDuplicates} className="rounded-2xl bg-red-500/20 px-5 py-3 font-black text-red-200">
+            Merge Duplicates
+          </button>
+
           <button onClick={normalizeThumbnails} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
             Normalize Thumbnails
           </button>
