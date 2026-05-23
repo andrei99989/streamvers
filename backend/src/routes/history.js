@@ -22,16 +22,18 @@ async function ensureTable() {
   `);
 }
 
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
     await ensureTable();
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
 
     const result = await query(`
       SELECT *
       FROM watch_history
       ORDER BY watched_at DESC
-      LIMIT 200
-    `);
+      LIMIT $1
+    `, [limit]);
 
     res.json({ items: result.rows });
   } catch (err) {

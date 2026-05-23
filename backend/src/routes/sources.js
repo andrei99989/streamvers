@@ -54,11 +54,14 @@ async function ensureColumns() {
   await query(`ALTER TABLE contents ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb`);
 }
 
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
     await ensureColumns();
 
-    const result = await query(`
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
+
+    const result = await query(
+      `
       SELECT
         s.id,
         s.content_id,
@@ -79,8 +82,10 @@ router.get('/', async (_req, res) => {
       FROM sources s
       LEFT JOIN contents c ON c.id = s.content_id
       ORDER BY s.created_at DESC
-      LIMIT 300
-    `);
+      LIMIT $1
+      `,
+      [limit]
+    );
 
     res.json({ items: result.rows });
   } catch (error) {

@@ -195,11 +195,11 @@ export default function HomePage() {
 
     async function load() {
       const [cont, hist, fav, src, rec, trend] = await Promise.all([
-        safeLoad('/continue'),
-        safeLoad('/history'),
-        safeLoad('/favorites'),
-        safeLoad('/sources'),
-        safeLoad('/recommendations'),
+        safeLoad('/continue?limit=20'),
+        safeLoad('/history?limit=20'),
+        safeLoad('/favorites?limit=20'),
+        safeLoad('/sources?limit=20'),
+        safeLoad('/recommendations?limit=20'),
         safeLoad('/trending?limit=20'),
       ]);
 
@@ -398,7 +398,7 @@ export default function HomePage() {
       />
 
       <Row title="Favorites" icon={Heart} href="/watchlist" items={favorites} />
-      <Row title="Watch History" icon={History} href="/history" items={historyItems.slice(0, 20)} />
+      <Row title="Watch History" icon={History} href="/history" items={historyItems} />
       <Row title="Recently Added Sources" icon={Database} href="/sources" items={sources} />
     </main>
   );
