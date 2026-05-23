@@ -6,7 +6,18 @@ import Link from 'next/link';
 import { Play, Clock3, Heart, History, Database, Search, Sparkles } from 'lucide-react';
 
 function poster(item: any) {
-  return item.poster || item.thumbnail || item.metadata?.thumbnail || '';
+  return (
+    item.poster ||
+    item.content_poster ||
+    item.backdrop ||
+    item.content_backdrop ||
+    item.thumbnail ||
+    item.metadata?.thumbnail ||
+    item.metadata?.poster ||
+    item.metadata?.content_poster ||
+    item.metadata?.universal?.tmdb?.[0]?.poster_path && `https://image.tmdb.org/t/p/w500${item.metadata.universal.tmdb[0].poster_path}` ||
+    ''
+  );
 }
 
 function providerLabel(item: any) {
