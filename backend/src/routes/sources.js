@@ -103,7 +103,7 @@ router.get('/', async (req, res) => {
         c.poster,
         c.backdrop,
         c.type AS content_type,
-        c.metadata,
+        jsonb_build_object('category', c.metadata->>'category', 'thumbnail', c.metadata->>'thumbnail', 'provider', c.metadata->>'provider') AS metadata,
         c.content_key,
         s.url,
         s.url AS embed_url,
