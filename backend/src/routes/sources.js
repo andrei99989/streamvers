@@ -430,6 +430,54 @@ router.post('/normalize-thumbnails', async (_req, res) => {
   }
 });
 
+
+router.get('/by-content/:contentId', async (req, res) => {
+  try {
+    const contentId = String(req.params.contentId || '').trim();
+
+    if (!contentId) {
+      return res.status(400).json({ error: 'MISSING_CONTENT_ID' });
+    }
+
+    const result = await query(
+      `
+      SELECT
+        s.id,
+        s.content_id,
+        c.title,
+        c.description,
+        c.poster,
+        c.backdrop,
+        c.type AS content_type,
+        jsonb_build_object(
+          'category', COALESCE(c.type, 'custom'),
+          'provider', COALESCE(s.source_type, 'source'),
+          'thumbnail', COALESCE(c.poster, c.backdrop, '')
+        ) AS metadata,
+        c.content_key,
+        s.url,
+        s.url AS embed_url,
+        s.source_type AS type,
+        s.source_type AS provider,
+        s.quality,
+        s.language,
+        s.is_primary,
+        s.created_at
+      FROM sources s
+      LEFT JOIN contents c ON c.id = s.content_id
+      WHERE s.content_id = $1::int
+      ORDER BY s.is_primary DESC, s.created_at DESC
+      `,
+      [contentId]
+    );
+
+    return res.json({ items: result.rows });
+  } catch (error) {
+    console.error('GET /sources/by-content/:contentId failed', error);
+    return res.status(500).json({ error: 'CONTENT_SOURCES_LOOKUP_FAILED' });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     await ensureColumns();

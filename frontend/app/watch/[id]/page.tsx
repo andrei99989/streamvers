@@ -29,6 +29,7 @@ export default function WatchPage({
 }) {
   const [routeId, setRouteId] = useState('');
   const [item, setItem] = useState<any>(null);
+  const [sources, setSources] = useState<any[]>([]);
   const [related, setRelated] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,8 @@ export default function WatchPage({
         if (!active) return;
 
         setItem(current);
+        const byContent = current.content_id ? await apiFetch(`/sources/by-content/${current.content_id}`) : { items: [current] };
+        if (active) setSources(byContent.items || [current]);
 
         const currentKey = current?.content_key || current?.metadata?.contentKey || '';
         const currentTitle = String(current?.title || '').toLowerCase().trim();
@@ -188,8 +191,27 @@ export default function WatchPage({
         </Link>
 
         <section className="mx-auto max-w-6xl">
+          {sources.length > 1 && (
+            <div className="mb-4 flex flex-wrap gap-2 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
+              {sources.map((src) => (
+                <button
+                  key={src.id}
+                  onClick={() => setItem(src)}
+                  className={`rounded-2xl px-4 py-3 text-sm font-black uppercase transition ${
+                    String(src.id) === String(item.id)
+                      ? 'bg-[#6A4CFF] text-white'
+                      : 'bg-white/10 text-white/60 hover:bg-white/20'
+                  }`}
+                >
+                  {providerOf(src)} · {typeOf(src)}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-2xl shadow-[#6A4CFF]/20">
             <UniversalPlayer
+              key={item.id}
               source={{
                 ...item,
                 sourceId: String(item.id),
