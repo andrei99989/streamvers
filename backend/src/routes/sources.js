@@ -296,6 +296,53 @@ router.post('/', async (req, res) => {
   }
 });
 
+
+router.post('/backfill-content-keys', async (_req, res) => {
+  try {
+    await ensureColumns();
+
+    const rows = await query(`
+      SELECT id, title, type, metadata, content_key
+      FROM contents
+      WHERE content_key IS NULL OR content_key = ''
+      ORDER BY id ASC
+    `);
+
+    let updated = 0;
+    const items = [];
+
+    for (const row of rows.rows) {
+      const metadata = row.metadata || {};
+      const key = buildContentKey({
+        title: row.title,
+        category: metadata.category || row.type || 'custom',
+        year: metadata.year || metadata.tmdb?.year || '',
+        tmdbId: metadata.tmdbId || metadata.tmdb?.id || null,
+        imdbId: metadata.imdbId || null,
+      });
+
+      if (!key) continue;
+
+      await query(
+        `UPDATE contents
+         SET content_key = $1,
+             metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('contentKey', $1::text)
+         WHERE id = $2`,
+        [key, row.id]
+      );
+
+      updated++;
+      items.push({ id: row.id, title: row.title, content_key: key });
+    }
+
+    res.json({ ok: true, scanned: rows.rows.length, updated, items });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Backfill content keys failed' });
+  }
+});
+
+
 router.post('/migrate-provider', async (_req, res) => {
   await query(`ALTER TABLE sources ADD COLUMN IF NOT EXISTS provider TEXT DEFAULT ''`);
   await query(`UPDATE sources SET provider = source_type WHERE provider = '' OR provider IS NULL`);
