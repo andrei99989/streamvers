@@ -398,7 +398,7 @@ export default function HomePage() {
       />
 
       <Row title="Favorites" icon={Heart} href="/watchlist" items={favorites} />
-      <Row title="Watch History" icon={History} href="/history" items={historyItems} />
+      <Row title="Watch History" icon={History} href="/history" items={historyItems.slice(0, 20)} />
       <Row title="Recently Added Sources" icon={Database} href="/sources" items={sources} />
     </main>
   );
