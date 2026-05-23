@@ -1,6 +1,6 @@
 'use client';
 
-import { apiPost } from '../../lib/apiClient';
+import { apiFetch, apiPost } from '../../lib/apiClient';
 import { API } from '../../lib/api';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -158,6 +158,23 @@ export default function SourcesPage() {
     }
   }
 
+  async function enrichMetadata() {
+    try {
+      setMessage('⏳ Enrich metadata rulează...');
+
+      const data = await apiFetch('/metadata/enrich-all', {
+        method: 'POST',
+        timeoutMs: 120000,
+        retries: 0,
+      });
+
+      setMessage(`✅ Metadata îmbogățită: ${data.updated || 0}/${data.total || 0}, eșuate: ${data.failed || 0}`);
+      await loadSources();
+    } catch (error: any) {
+      setMessage(`❌ Enrich metadata eșuat: ${error?.message || 'unknown error'}`);
+    }
+  }
+
   const filteredSources = useMemo(() => {
     const q = search.trim().toLowerCase();
 
@@ -295,6 +312,24 @@ export default function SourcesPage() {
         <p className="mt-3 max-w-3xl text-white/50">
           Salvează URL-uri, iframe-uri, MP4, WebM, HLS, YouTube, Vimeo, Dailymotion, TikTok, TeraBox și alte surse.
         </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button onClick={normalizeProviders} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
+            Normalize Providers
+          </button>
+          <button onClick={normalizeThumbnails} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
+            Normalize Thumbnails
+          </button>
+          <button onClick={enrichMetadata} className="rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black">
+            Enrich Metadata
+          </button>
+        </div>
+
+        {message && (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/70">
+            {message}
+          </div>
+        )}
 
         <div className="mt-8 grid gap-3 md:grid-cols-[1fr_2fr_auto]">
           <input
