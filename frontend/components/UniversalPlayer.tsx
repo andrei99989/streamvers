@@ -273,11 +273,12 @@ export default function UniversalPlayer({
           provider,
           sourceType: finalType,
           poster: source.poster || '',
-          progress: 5,
-          duration: 120,
+          progress: 1,
+          duration: 0,
           metadata: {
             autosave: true,
             iframe: true,
+            progressMode: 'opened',
           },
         }),
       });
@@ -415,7 +416,7 @@ export default function UniversalPlayer({
             setProgress(video.currentTime || 0);
             setDuration(video.duration || 0);
 
-            if (now - lastSaveRef.current < 10000) return;
+            if (now - lastSaveRef.current < 5000) return;
             lastSaveRef.current = now;
 
             await saveContinue(video);

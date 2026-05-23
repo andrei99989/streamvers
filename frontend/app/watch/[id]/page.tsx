@@ -94,7 +94,7 @@ export default function WatchPage({
           sourceType: typeOf(current),
           source_type: typeOf(current),
           poster: posterOf(current),
-          progress: 5,
+          progress: 1,
           duration: Number(current.duration || 120),
           metadata: { autosave: true, content_key: current.content_key },
         }).catch(() => null);
