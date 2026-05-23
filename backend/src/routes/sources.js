@@ -297,6 +297,60 @@ router.post('/', async (req, res) => {
 });
 
 
+
+router.post('/merge-duplicates', async (_req, res) => {
+  try {
+    await ensureColumns();
+
+    const groups = await query(`
+      SELECT content_key, array_agg(id ORDER BY id DESC) AS ids
+      FROM contents
+      WHERE content_key IS NOT NULL AND content_key <> ''
+      GROUP BY content_key
+      HAVING COUNT(*) > 1
+    `);
+
+    let removed = 0;
+    const merged = [];
+
+    for (const group of groups.rows) {
+      const ids = group.ids;
+      const keepId = ids[0];
+      const deleteIds = ids.slice(1);
+
+      if (!deleteIds.length) continue;
+
+      await query(
+        `DELETE FROM sources WHERE content_id = ANY($1::int[])`,
+        [deleteIds]
+      );
+
+      await query(
+        `DELETE FROM contents WHERE id = ANY($1::int[])`,
+        [deleteIds]
+      );
+
+      removed += deleteIds.length;
+      merged.push({
+        content_key: group.content_key,
+        kept: keepId,
+        deleted: deleteIds,
+      });
+    }
+
+    res.json({
+      ok: true,
+      groups: groups.rows.length,
+      removed,
+      merged,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Merge duplicates failed' });
+  }
+});
+
+
 router.post('/backfill-content-keys', async (_req, res) => {
   try {
     await ensureColumns();
