@@ -43,6 +43,25 @@ function percent(item: any) {
   );
 }
 
+
+function uniqueItems(items: any[]) {
+  const seen = new Set<string>();
+
+  return (items || []).filter((item: any) => {
+    const key = String(
+      item.content_key ||
+      item.metadata?.contentKey ||
+      item.source_id ||
+      item.id ||
+      `${item.title || ''}|${item.url || ''}`
+    ).toLowerCase();
+
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function Row({ title, icon: Icon, href, items, showProgress = false }: any) {
   return (
     <section className="section-fade mt-10 sm:mt-12 scroll-mt-24">
@@ -66,7 +85,7 @@ function Row({ title, icon: Icon, href, items, showProgress = false }: any) {
             Nimic momentan.
           </div>
         ) : (
-          items.map((item: any) => {
+          uniqueItems(items).map((item: any) => {
             const image = poster(item);
             const provider = providerKey(item);
             const progress = percent(item);
@@ -214,7 +233,7 @@ export default function HomePage() {
     load();
   }, []);
 
-  const hero = trendingItems[0] || continueItems[0] || favorites[0] || sources[0];
+  const hero = uniqueItems(trendingItems)[0] || uniqueItems(continueItems)[0] || uniqueItems(favorites)[0] || uniqueItems(sources)[0];
   const heroImage = hero ? poster(hero) : '';
   const heroProvider = hero ? providerLabel(hero) : '';
   const heroTrendingScore =

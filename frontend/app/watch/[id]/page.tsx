@@ -3,8 +3,24 @@
 import { apiFetch, apiPost } from '../../../lib/apiClient';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Library, Search, Star } from 'lucide-react';
+import { ArrowLeft, Library, Search, Star, Database, Hash } from 'lucide-react';
 import UniversalPlayer from '../../../components/UniversalPlayer';
+
+function providerOf(item: any) {
+  return item?.provider || item?.source_type || item?.type || 'source';
+}
+
+function typeOf(item: any) {
+  return item?.source_type || item?.type || item?.provider || 'source';
+}
+
+function posterOf(item: any) {
+  return item?.poster || item?.thumbnail || item?.metadata?.thumbnail || '';
+}
+
+function watchId(item: any) {
+  return item?.source_id || item?.id;
+}
 
 export default function WatchPage({
   params,
@@ -16,7 +32,6 @@ export default function WatchPage({
   const [related, setRelated] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState<any>(null);
 
   useEffect(() => {
     params.then((p) => setRouteId(decodeURIComponent(p.id)));
@@ -28,98 +43,60 @@ export default function WatchPage({
     let active = true;
 
     async function load() {
-      try {
-        const source = await apiFetch(`/sources/${routeId}`);
-        setSource(source);
-        // Continue Watching is saved by UniversalPlayer with normalized source props.
+      setLoading(true);
 
-        const sourcesData = await apiFetch('/sources');
+      try {
+        const current = await apiFetch(`/sources/${routeId}`);
+        const sourcesData = await apiFetch('/sources?limit=100');
 
         if (!active) return;
 
-        setItem(source);
-        const seen = new Set<string>();
-        const currentItem = source;
+        setItem(current);
 
-        const cleanRelated = (sourcesData.items || [])
+        const currentKey = current?.content_key || current?.metadata?.contentKey || '';
+        const currentTitle = String(current?.title || '').toLowerCase().trim();
+
+        const rel = (sourcesData.items || [])
           .filter((x: any) => String(x.id) !== String(routeId))
           .filter((x: any) => {
-            const currentUrl = currentItem?.url || currentItem?.embed_url || '';
-            const xUrl = x.url || x.embed_url || '';
-
-            if (currentUrl && xUrl && currentUrl === xUrl) return false;
-
-            const currentTitle = (currentItem?.title || '').toLowerCase().trim();
-            const xTitle = (x.title || '').toLowerCase().trim();
-            const currentProvider = currentItem?.provider || currentItem?.source_type || currentItem?.type || '';
-            const xProvider = x.provider || x.source_type || x.type || '';
-
-            if (currentTitle && xTitle && currentTitle === xTitle && currentProvider === xProvider) {
-              return false;
-            }
-
-            const key = [
-              (x.title || '').toLowerCase().trim(),
-              x.provider || x.source_type || x.type || '',
-            ].join('|');
-
-            if (seen.has(key)) return false;
-            seen.add(key);
+            if (currentKey && x.content_key === currentKey) return false;
+            if (currentTitle && String(x.title || '').toLowerCase().trim() === currentTitle) return false;
             return true;
-          })
-          .sort((a: any, b: any) => {
-            const ah = a.poster && String(a.poster).trim() ? 1 : 0;
-            const bh = b.poster && String(b.poster).trim() ? 1 : 0;
-
-            if (bh !== ah) return bh - ah;
-
-            const ap = a.provider || a.source_type || a.type || '';
-            const bp = b.provider || b.source_type || b.type || '';
-
-            return ap.localeCompare(bp);
           })
           .slice(0, 8);
 
-        const providerCounts: Record<string, number> = {};
-
-        const limitedRelated = cleanRelated.filter((x: any) => {
-          const provider = x.provider || x.source_type || x.type || 'source';
-          providerCounts[provider] = providerCounts[provider] || 0;
-
-          if (providerCounts[provider] >= 2) return false;
-
-          providerCounts[provider] += 1;
-          return true;
-        });
-
-        setRelated(limitedRelated);
+        setRelated(rel);
 
         await apiPost('/history', {
-          sourceId: String(source.id),
-          contentId: String(source.content_id || ''),
-          title: source.title || 'Untitled',
-          url: source.url || source.embed_url || '',
-          provider: source.provider || source.source_type || '',
-          sourceType: source.source_type || source.provider || '',
-          poster: source.poster || '',
+          sourceId: String(current.id),
+          contentId: String(current.content_id || ''),
+          title: current.title || 'Untitled',
+          url: current.url || current.embed_url || '',
+          provider: providerOf(current),
+          sourceType: typeOf(current),
+          poster: posterOf(current),
           progress: 1,
-          metadata: source,
+          metadata: {
+            content_key: current.content_key,
+            category: current.metadata?.category,
+            provider: providerOf(current),
+          },
         }).catch(() => null);
 
         await apiPost('/continue', {
-          sourceId: String(source.id),
-          source_id: String(source.id),
-          contentId: String(source.content_id || ''),
-          content_id: String(source.content_id || ''),
-          title: source.title || 'Untitled',
-          url: source.url || source.embed_url || '',
-          provider: source.provider || source.source_type || source.type || 'source',
-          sourceType: source.source_type || source.type || source.provider || 'source',
-          source_type: source.source_type || source.type || source.provider || 'source',
-          poster: source.poster || source.thumbnail || source.metadata?.thumbnail || '',
+          sourceId: String(current.id),
+          source_id: String(current.id),
+          contentId: String(current.content_id || ''),
+          content_id: String(current.content_id || ''),
+          title: current.title || 'Untitled',
+          url: current.url || current.embed_url || '',
+          provider: providerOf(current),
+          sourceType: typeOf(current),
+          source_type: typeOf(current),
+          poster: posterOf(current),
           progress: 5,
-          duration: Number(source.duration || 120),
-          metadata: { autosave: true, fallback: true },
+          duration: Number(current.duration || 120),
+          metadata: { autosave: true, content_key: current.content_key },
         }).catch(() => null);
       } catch {
         if (active) setItem(null);
@@ -140,24 +117,6 @@ export default function WatchPage({
     setTimeout(() => setMessage(''), 2500);
   }
 
-  function getYoutubeId(url: string) {
-    const value = String(url || '');
-
-    if (value.includes('/embed/')) {
-      return value.split('/embed/')[1]?.split('?')[0]?.split('&')[0] || '';
-    }
-
-    if (value.includes('watch?v=')) {
-      return value.split('watch?v=')[1]?.split('&')[0] || '';
-    }
-
-    if (value.includes('youtu.be/')) {
-      return value.split('youtu.be/')[1]?.split('?')[0] || '';
-    }
-
-    return '';
-  }
-
   async function addToLibrary() {
     if (!item) return showMessage('❌ Nu există sursă pentru Library');
 
@@ -167,9 +126,13 @@ export default function WatchPage({
         contentId: item.content_id || null,
         title: item.title || 'Untitled',
         url: item.url || item.embed_url || '',
-        provider: item.provider || item.source_type || item.type || '',
-        poster: item.poster || '',
-        metadata: item,
+        provider: providerOf(item),
+        poster: posterOf(item),
+        metadata: {
+          content_key: item.content_key,
+          category: item.metadata?.category,
+          provider: providerOf(item),
+        },
       });
 
       showMessage('✅ Salvat în Library');
@@ -187,10 +150,14 @@ export default function WatchPage({
         contentId: String(item.content_id || ''),
         title: item.title || 'Untitled',
         url: item.url || item.embed_url || '',
-        provider: item.provider || item.source_type || item.type || '',
-        sourceType: item.source_type || item.provider || item.type || '',
-        poster: item.poster || '',
-        metadata: item,
+        provider: providerOf(item),
+        sourceType: typeOf(item),
+        poster: posterOf(item),
+        metadata: {
+          content_key: item.content_key,
+          category: item.metadata?.category,
+          provider: providerOf(item),
+        },
       });
 
       showMessage('✅ Salvat în Favorite');
@@ -200,19 +167,11 @@ export default function WatchPage({
   }
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-black p-10 text-white">
-        Se încarcă...
-      </main>
-    );
+    return <main className="min-h-screen bg-black p-10 text-white">Se încarcă...</main>;
   }
 
   if (!item) {
-    return (
-      <main className="min-h-screen bg-black p-10 text-white">
-        Nu am găsit sursa.
-      </main>
-    );
+    return <main className="min-h-screen bg-black p-10 text-white">Nu am găsit sursa.</main>;
   }
 
   return (
@@ -225,8 +184,7 @@ export default function WatchPage({
 
       <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
         <Link href="/" className="mb-6 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-black">
-          <ArrowLeft size={18} />
-          Back
+          <ArrowLeft size={18} /> Back
         </Link>
 
         <section className="mx-auto max-w-6xl">
@@ -236,48 +194,62 @@ export default function WatchPage({
                 ...item,
                 sourceId: String(item.id),
                 contentId: String(item.content_id || ''),
-                provider: item.provider || item.source_type || item.type || '',
-                type: item.source_type || item.type || item.provider || '',
-                poster: item.poster || '',
+                provider: providerOf(item),
+                type: typeOf(item),
+                poster: posterOf(item),
               }}
               title={item.title}
             />
           </div>
 
           <section className="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-6">
-            <div className="mb-4 w-fit rounded-full bg-[#6A4CFF]/30 px-4 py-2 text-xs font-black uppercase text-[#B8A7FF]">
-              {item.provider || item.source_type || item.type || 'source'}
+            <div className="mb-4 flex flex-wrap gap-2">
+              <span className="rounded-full bg-[#6A4CFF]/30 px-4 py-2 text-xs font-black uppercase text-[#B8A7FF]">
+                {providerOf(item)}
+              </span>
+              <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-black uppercase text-white/60">
+                {item.content_type || item.metadata?.category || 'content'}
+              </span>
             </div>
 
             <h1 className="text-4xl font-black">{item.title}</h1>
 
-            <p className="mt-4 break-all text-white/50">{item.url}</p>
+            {item.description && (
+              <p className="mt-4 max-w-4xl text-white/60">{item.description}</p>
+            )}
 
-            <div className="mt-6 grid gap-3 text-sm text-white/70">
-              <div><b>Provider:</b> {item.provider || item.source_type || item.type || 'N/A'}</div>
-              <div><b>Type:</b> {item.source_type || item.type || item.provider || 'N/A'}</div>
+            <div className="mt-6 grid gap-3 text-sm text-white/70 md:grid-cols-2">
+              <div className="rounded-2xl bg-black/30 p-4">
+                <b>Provider:</b> {providerOf(item)}
+              </div>
+              <div className="rounded-2xl bg-black/30 p-4">
+                <b>Type:</b> {typeOf(item)}
+              </div>
+              <div className="rounded-2xl bg-black/30 p-4">
+                <b>Content ID:</b> {item.content_id || 'N/A'}
+              </div>
+              <div className="rounded-2xl bg-black/30 p-4">
+                <b>Content Key:</b> {item.content_key || item.metadata?.contentKey || 'N/A'}
+              </div>
             </div>
 
+            <p className="mt-4 break-all text-xs text-white/40">{item.url || item.embed_url}</p>
+
             <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                onClick={addToLibrary}
-                className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-bold"
-              >
+              <button onClick={addToLibrary} className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-bold">
                 <Library size={18} /> Library
               </button>
 
-              <button
-                onClick={addFavorite}
-                className="flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-bold"
-              >
+              <button onClick={addFavorite} className="flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-bold">
                 <Star size={18} /> Favorite
               </button>
 
-              <Link
-                href="/search"
-                className="flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-bold"
-              >
-                <Search size={18} /> Search
+              <Link href="/sources" className="flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-bold">
+                <Database size={18} /> Sources
+              </Link>
+
+              <Link href={`/search?q=${encodeURIComponent(item.title || '')}`} className="flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-4 font-bold">
+                <Search size={18} /> Search similar
               </Link>
             </div>
           </section>
@@ -286,82 +258,28 @@ export default function WatchPage({
             <section className="mt-10">
               <h2 className="mb-5 text-3xl font-black">Related Sources</h2>
 
-              <div className="space-y-8">
-                {Object.entries(
-                  related.reduce((groups: Record<string, any[]>, rel: any) => {
-                    const key = rel.provider || rel.source_type || rel.type || 'source';
-                    groups[key] = groups[key] || [];
-                    groups[key].push(rel);
-                    return groups;
-                  }, {})
-                ).map(([provider, items]: any) => (
-                  <div key={provider}>
-                    <h3 className="mb-4 rounded-2xl bg-white/10 px-5 py-3 text-xl font-black uppercase text-white/80">Provider: {provider}</h3>
-
-                    <div className="grid gap-5 md:grid-cols-3">
-                      {items.map((rel: any) => (
-                        <Link
-                          key={rel.id}
-                          href={`/watch/${rel.id}`}
-                          className="block overflow-hidden rounded-[2rem] border border-white/10 bg-white/5"
-                        >
-                          {(rel.poster && String(rel.poster).trim()) || (rel.provider || rel.source_type) === 'youtube' ? (
-                            <img
-                              src={
-                                rel.poster && String(rel.poster).trim()
-                                  ? rel.poster
-                                  : `https://img.youtube.com/vi/${getYoutubeId(rel.url || rel.embed_url || '')}/hqdefault.jpg`
-                              }
-                              alt=""
-                              onError={(e) => {
-                                const parent = e.currentTarget.parentElement;
-                                e.currentTarget.remove();
-
-                                if (parent && !parent.querySelector('.fallback-provider')) {
-                                  const div = document.createElement('div');
-                                  div.className =
-                                    'fallback-provider flex h-44 flex-col items-center justify-center bg-white/5 text-xs text-white/40';
-
-                                  const icon = document.createElement('div');
-                                  icon.style.fontSize = '32px';
-                                  icon.textContent = '▶️';
-
-                                  const label = document.createElement('div');
-                                  label.style.marginTop = '8px';
-                                  label.style.fontWeight = '700';
-                                  label.style.textTransform = 'uppercase';
-                                  label.textContent = String(rel.provider || rel.source_type || rel.type || 'source');
-
-                                  div.appendChild(icon);
-                                  div.appendChild(label);
-
-                                  parent.prepend(div);
-                                }
-                              }}
-                              className="h-44 w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-44 flex-col items-center justify-center bg-white/5 text-xs text-white/40">
-                              <div className="text-3xl">▶️</div>
-                              <div className="mt-2 font-black uppercase">
-                                {rel.provider || rel.source_type || rel.type || 'source'}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="p-4">
-                            <h3 className="line-clamp-2 text-xl font-black">
-                              {rel.title || 'Untitled'}
-                            </h3>
-
-                            <div className="mt-3 text-xs text-white/40">
-                              Click pentru Play
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
+              <div className="grid gap-5 md:grid-cols-4">
+                {related.map((rel: any) => (
+                  <Link
+                    key={rel.id}
+                    href={`/watch/${watchId(rel)}`}
+                    className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 transition hover:border-[#6A4CFF]"
+                  >
+                    <div className="aspect-[16/10] bg-white/5">
+                      {posterOf(rel) ? (
+                        <img src={posterOf(rel)} alt={rel.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-white/30">
+                          <Hash size={36} />
+                        </div>
+                      )}
                     </div>
-                  </div>
+
+                    <div className="p-4">
+                      <div className="mb-2 text-xs font-black uppercase text-[#B8A7FF]">{providerOf(rel)}</div>
+                      <h3 className="line-clamp-2 font-black">{rel.title}</h3>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </section>
