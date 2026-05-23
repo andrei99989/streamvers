@@ -447,4 +447,56 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+
+router.get('/:id', async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+
+    if (!id) {
+      return res.status(400).json({ error: 'MISSING_ID' });
+    }
+
+    const result = await query(
+      `
+      SELECT
+        s.id,
+        s.content_id,
+        c.title,
+        c.description,
+        c.poster,
+        c.backdrop,
+        c.type AS content_type,
+        jsonb_build_object(
+          'category', COALESCE(c.type, 'custom'),
+          'provider', COALESCE(s.source_type, 'source'),
+          'thumbnail', COALESCE(c.poster, c.backdrop, '')
+        ) AS metadata,
+        c.content_key,
+        s.url,
+        s.url AS embed_url,
+        s.source_type AS type,
+        s.source_type AS provider,
+        s.quality,
+        s.language,
+        s.is_primary,
+        s.created_at
+      FROM sources s
+      LEFT JOIN contents c ON c.id = s.content_id
+      WHERE s.id = $1::int OR s.content_id = $1::int
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'SOURCE_NOT_FOUND' });
+    }
+
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error('GET /sources/:id failed', error);
+    return res.status(500).json({ error: 'SOURCE_LOOKUP_FAILED' });
+  }
+});
+
 export default router;
