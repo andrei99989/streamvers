@@ -301,7 +301,25 @@ export default function WatchPage({
 
             <p className="mt-4 break-all text-xs text-white/40">{item.url || item.embed_url}</p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            {probe && (
+                  <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/70">
+                    <div><b>Video Engine:</b> {probe.type} · {probe.container} · {probe.codec} · {probe.quality}</div>
+                    <div><b>Browser:</b> {probe.playableInBrowser ? 'playable' : 'needs conversion'}</div>
+                  </div>
+                )}
+
+                {transcodeJob && (
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/70">
+                    <b>Transcoding:</b> {transcodeJob.status} · {transcodeJob.progress || 0}%
+                  </div>
+                )}
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  {probe?.needsTranscoding && (
+                    <button onClick={startTranscode} className="rounded-2xl bg-[#00E0A8] px-6 py-4 font-bold text-black">
+                      Convert to HLS
+                    </button>
+                  )}
               <button onClick={addToLibrary} className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-bold">
                 <Library size={18} /> Library
               </button>
