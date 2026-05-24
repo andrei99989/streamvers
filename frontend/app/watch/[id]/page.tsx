@@ -33,6 +33,8 @@ export default function WatchPage({
   const [related, setRelated] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [probe, setProbe] = useState<any>(null);
+  const [transcodeJob, setTranscodeJob] = useState<any>(null);
 
   useEffect(() => {
     params.then((p) => setRouteId(decodeURIComponent(p.id)));
@@ -53,6 +55,9 @@ export default function WatchPage({
         if (!active) return;
 
         setItem(current);
+        apiFetch(`/stream/probe?url=${encodeURIComponent(current.url || current.embed_url || '')}`)
+          .then(setProbe)
+          .catch(() => setProbe(null));
         const byContent = current.content_id ? await apiFetch(`/sources/by-content/${current.content_id}`) : { items: [current] };
         if (active) setSources(byContent.items || [current]);
 
@@ -166,6 +171,45 @@ export default function WatchPage({
       showMessage('✅ Salvat în Favorite');
     } catch {
       showMessage('❌ Nu s-a putut salva în Favorite');
+    }
+  }
+
+
+  async function startTranscode() {
+    if (!item?.url && !item?.embed_url) {
+      return showMessage('❌ Nu există URL pentru transcoding');
+    }
+
+    try {
+      setTranscodeJob({ status: 'starting', progress: 0 });
+
+      const job = await apiFetch('/stream/transcode', {
+        method: 'POST',
+        body: JSON.stringify({ url: item.url || item.embed_url }),
+      });
+
+      setTranscodeJob(job);
+      showMessage('✅ Transcoding pornit');
+
+      const timer = window.setInterval(async () => {
+        try {
+          const updated = await apiFetch(`/stream/jobs/${job.id}`);
+          setTranscodeJob(updated);
+
+          if (updated.status === 'completed' || updated.status === 'failed') {
+            window.clearInterval(timer);
+          }
+        } catch {
+          window.clearInterval(timer);
+        }
+      }, 3000);
+    } catch {
+      setTranscodeJob({
+        status: 'failed',
+        progress: 0,
+        error: 'Nu s-a putut porni transcoding',
+      });
+      showMessage('❌ Transcoding eșuat');
     }
   }
 
