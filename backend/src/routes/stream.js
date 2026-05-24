@@ -1,6 +1,27 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { spawn } from 'child_process';
 
 const router = Router();
+
+const jobs = new Map();
+const TRANSCODE_ROOT = path.resolve(process.cwd(), 'backend/storage/transcodes');
+
+function ensureTranscodeRoot() {
+  fs.mkdirSync(TRANSCODE_ROOT, { recursive: true });
+}
+
+function safeJobId() {
+  return crypto.randomBytes(8).toString('hex');
+}
+
+function publicHlsUrl(req, jobId) {
+  return `${req.protocol}://${req.get('host')}/stream/hls/${jobId}/master.m3u8`;
+}
+
+
 
 function detectProvider(url = '') {
   const value = String(url || '').toLowerCase();
@@ -108,5 +129,112 @@ router.get('/probe', async (req, res) => {
     canUseHls: type === 'hls',
   });
 });
+
+
+router.post('/transcode', async (req, res) => {
+  const url = String(req.body?.url || '').trim();
+
+  if (!url) {
+    return res.status(400).json({ error: 'MISSING_URL' });
+  }
+
+  ensureTranscodeRoot();
+
+  const jobId = safeJobId();
+  const jobDir = path.join(TRANSCODE_ROOT, jobId);
+  fs.mkdirSync(jobDir, { recursive: true });
+
+  const output = path.join(jobDir, 'master.m3u8');
+
+  const job = {
+    id: jobId,
+    url,
+    status: 'running',
+    progress: 0,
+    output,
+    hlsUrl: publicHlsUrl(req, jobId),
+    createdAt: new Date().toISOString(),
+    error: '',
+  };
+
+  jobs.set(jobId, job);
+
+  const args = [
+    '-y',
+    '-i', url,
+    '-c:v', 'libx264',
+    '-preset', 'veryfast',
+    '-crf', '23',
+    '-c:a', 'aac',
+    '-b:a', '128k',
+    '-f', 'hls',
+    '-hls_time', '6',
+    '-hls_playlist_type', 'vod',
+    '-hls_segment_filename', path.join(jobDir, 'segment_%03d.ts'),
+    output,
+  ];
+
+  const ffmpeg = spawn('ffmpeg', args);
+
+  ffmpeg.stderr.on('data', (chunk) => {
+    const text = chunk.toString();
+    if (text.includes('time=')) {
+      job.progress = Math.min(99, job.progress + 3);
+    }
+  });
+
+  ffmpeg.on('error', (error) => {
+    job.status = 'failed';
+    job.error = error.message;
+  });
+
+  ffmpeg.on('close', (code) => {
+    if (code === 0 && fs.existsSync(output)) {
+      job.status = 'completed';
+      job.progress = 100;
+    } else {
+      job.status = 'failed';
+      job.error = `ffmpeg exited with code ${code}`;
+    }
+  });
+
+  return res.status(202).json(job);
+});
+
+router.get('/jobs/:jobId', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+
+  if (!job) {
+    return res.status(404).json({ error: 'JOB_NOT_FOUND' });
+  }
+
+  return res.json(job);
+});
+
+router.get('/hls/:jobId/:file', (req, res) => {
+  const jobId = String(req.params.jobId || '');
+  const file = String(req.params.file || '');
+
+  if (!/^[a-f0-9]+$/.test(jobId) || file.includes('..')) {
+    return res.status(400).json({ error: 'BAD_PATH' });
+  }
+
+  const filePath = path.join(TRANSCODE_ROOT, jobId, file);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'HLS_FILE_NOT_FOUND' });
+  }
+
+  if (file.endsWith('.m3u8')) {
+    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+  }
+
+  if (file.endsWith('.ts')) {
+    res.setHeader('Content-Type', 'video/mp2t');
+  }
+
+  return res.sendFile(filePath);
+});
+
 
 export default router;
