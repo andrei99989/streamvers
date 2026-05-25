@@ -118,6 +118,8 @@ export default function SourcesPage() {
   const [sources, setSources] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [optimizing, setOptimizing] = useState(false);
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
+  const [lastOptimizedAt, setLastOptimizedAt] = useState('');
   const [active, setActive] = useState<any>(null);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -148,6 +150,7 @@ export default function SourcesPage() {
       await apiFetch('/sources/normalize', { method: 'POST' });
       const result = await apiFetch('/sources/auto-optimize', { method: 'POST' });
 
+      setLastOptimizedAt(new Date().toLocaleTimeString());
       setMessage(
         `✅ Auto optimize complet · providers: ${result.steps?.[0]?.updated || 0} · keys: ${result.steps?.[1]?.updated || 0} · thumbs: ${result.steps?.[2]?.updated || 0}`
       );
@@ -369,32 +372,53 @@ export default function SourcesPage() {
           Salvează URL-uri, iframe-uri, MP4, WebM, HLS, YouTube, Vimeo, Dailymotion, TikTok, TeraBox și alte surse.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            onClick={autoOptimize}
-            disabled={optimizing}
-            className="rounded-2xl bg-[#00E0A8] px-6 py-3 font-black text-black disabled:opacity-50"
-          >
-            {optimizing ? 'Optimizing...' : 'Auto Optimize Library'}
-          </button>
-          <button onClick={normalizeProviders} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
-            Normalize Providers
-          </button>
-          
-          <button onClick={backfillContentKeys} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
-            Backfill Keys
-          </button>
-          <button onClick={mergeDuplicates} className="rounded-2xl bg-red-500/20 px-5 py-3 font-black text-red-200">
-            Merge Duplicates
-          </button>
+        <div className="mt-6 rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-5">
+          <div className="text-sm font-black uppercase text-[#00E0A8]">Smart Library Engine</div>
+          <div className="mt-2 text-2xl font-black">Status: Active</div>
+          <div className="mt-1 text-sm text-white/50">
+            Auto normalizează providers, keys, duplicates, thumbnails și metadata.
+          </div>
+          <div className="mt-2 text-xs font-bold text-white/40">
+            Last optimization: {lastOptimizedAt || 'not yet in this session'}
+          </div>
 
-          <button onClick={normalizeThumbnails} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
-            Normalize Thumbnails
-          </button>
-          <button onClick={enrichMetadata} className="rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black">
-            Enrich Metadata
-          </button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              onClick={autoOptimize}
+              disabled={optimizing}
+              className="rounded-2xl bg-[#00E0A8] px-6 py-3 font-black text-black disabled:opacity-50"
+            >
+              {optimizing ? 'Optimizing...' : 'Run Smart Optimize'}
+            </button>
+
+            <button
+              onClick={() => setShowAdvancedTools((value) => !value)}
+              className="rounded-2xl bg-white/10 px-6 py-3 font-black"
+            >
+              {showAdvancedTools ? 'Hide Advanced Tools' : 'Advanced Tools'}
+            </button>
+          </div>
         </div>
+
+        {showAdvancedTools && (
+          <div className="mt-4 flex flex-wrap gap-3 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4">
+            <button onClick={normalizeProviders} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
+              Normalize Providers
+            </button>
+            <button onClick={backfillContentKeys} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
+              Backfill Keys
+            </button>
+            <button onClick={mergeDuplicates} className="rounded-2xl bg-red-500/20 px-5 py-3 font-black text-red-200">
+              Merge Duplicates
+            </button>
+            <button onClick={normalizeThumbnails} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
+              Normalize Thumbnails
+            </button>
+            <button onClick={enrichMetadata} className="rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black">
+              Enrich Metadata
+            </button>
+          </div>
+        )}
 
         {message && (
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/70">
