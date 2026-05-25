@@ -76,6 +76,19 @@ function buildContentKey({ title, category, year, tmdbId, imdbId }) {
   return `title:${normalizeText(title)}|category:${normalizeText(category)}|year:${year || ''}`;
 }
 
+
+async function ensureOptimizationLogsTable() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS source_optimization_logs (
+      id BIGSERIAL PRIMARY KEY,
+      steps JSONB DEFAULT '[]'::jsonb,
+      summary JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+}
+
+
 async function ensureColumns() {
   await query(`ALTER TABLE contents ADD COLUMN IF NOT EXISTS poster TEXT`);
   await query(`ALTER TABLE contents ADD COLUMN IF NOT EXISTS backdrop TEXT`);
@@ -552,6 +565,28 @@ router.delete('/:id', async (req, res) => {
 });
 
 
+
+router.get('/optimization-logs', async (_req, res) => {
+  try {
+    await ensureOptimizationLogsTable();
+
+    const result = await query(`
+      SELECT
+        id,
+        steps,
+        summary,
+        created_at AS "createdAt"
+      FROM source_optimization_logs
+      ORDER BY created_at DESC
+      LIMIT 50
+    `);
+
+    res.json({ items: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Optimization logs failed' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const id = String(req.params.id || '').trim();
@@ -691,19 +726,37 @@ router.post('/auto-optimize', async (_req, res) => {
       RETURNING id
     `);
 
+    const steps = [
+      { step: 'normalize-providers', updated: normalized.rowCount },
+      { step: 'backfill-content-keys', updated: keys },
+      { step: 'normalize-thumbnails', updated: thumbnails.rowCount },
+    ];
+
+    await ensureOptimizationLogsTable();
+    await query(
+      `
+      INSERT INTO source_optimization_logs (steps, summary)
+      VALUES ($1::jsonb, $2::jsonb)
+      `,
+      [
+        JSON.stringify(steps),
+        JSON.stringify({
+          totalUpdated: steps.reduce((sum, item) => sum + Number(item.updated || 0), 0),
+        }),
+      ]
+    );
+
     res.json({
       ok: true,
-      steps: [
-        { step: 'normalize-providers', updated: normalized.rowCount },
-        { step: 'backfill-content-keys', updated: keys },
-        { step: 'normalize-thumbnails', updated: thumbnails.rowCount },
-      ],
+      steps,
     });
   } catch (error) {
     console.error('POST /sources/auto-optimize failed', error);
     res.status(500).json({ ok: false, error: error.message || 'Auto optimize failed' });
   }
 });
+
+
 
 
 export default router;
