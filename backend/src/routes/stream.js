@@ -241,6 +241,15 @@ router.post('/transcode', async (req, res) => {
   return res.status(202).json(job);
 });
 
+
+router.get('/jobs', (_req, res) => {
+  const items = Array.from(jobs.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  return res.json({ items });
+});
+
 router.get('/jobs/:jobId', (req, res) => {
   const job = jobs.get(req.params.jobId);
 
