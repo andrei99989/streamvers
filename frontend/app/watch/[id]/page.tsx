@@ -35,6 +35,7 @@ export default function WatchPage({
   const [loading, setLoading] = useState(true);
   const [probe, setProbe] = useState<any>(null);
   const [transcodeJob, setTranscodeJob] = useState<any>(null);
+  const [transcodeQuality, setTranscodeQuality] = useState('720p');
 
   useEffect(() => {
     params.then((p) => setRouteId(decodeURIComponent(p.id)));
@@ -185,7 +186,7 @@ export default function WatchPage({
 
       const job = await apiFetch('/stream/transcode', {
         method: 'POST',
-        body: JSON.stringify({ url: item.url || item.embed_url }),
+        body: JSON.stringify({ url: item.url || item.embed_url, quality: transcodeQuality }),
       });
 
       setTranscodeJob(job);
@@ -359,9 +360,21 @@ export default function WatchPage({
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   {probe?.needsTranscoding && (
-                    <button onClick={startTranscode} className="rounded-2xl bg-[#00E0A8] px-6 py-4 font-bold text-black">
-                      Convert to HLS
-                    </button>
+                    <>
+                      <select
+                        value={transcodeQuality}
+                        onChange={(e) => setTranscodeQuality(e.target.value)}
+                        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 font-bold text-white outline-none"
+                      >
+                        {['360p', '720p', '1080p', 'source'].map((q) => (
+                          <option key={q} value={q}>{q}</option>
+                        ))}
+                      </select>
+
+                      <button onClick={startTranscode} className="rounded-2xl bg-[#00E0A8] px-6 py-4 font-bold text-black">
+                        Convert to HLS
+                      </button>
+                    </>
                   )}
 
                   {transcodeJob?.status === 'completed' && transcodeJob?.hlsUrl && (
