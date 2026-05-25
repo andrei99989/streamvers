@@ -416,6 +416,17 @@ export default function HomePage() {
         showProgress
       />
 
+      <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+        <Link href="/transcoding" className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-black uppercase text-[#00E0A8]">FFMPEG ENGINE</div>
+            <h2 className="mt-2 text-3xl font-black">Transcoding Jobs</h2>
+            <p className="mt-2 text-white/50">Monitorizează conversiile MKV/AVI/MOV către HLS.</p>
+          </div>
+          <div className="rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black">Open</div>
+        </Link>
+      </section>
+
       <Row title="Favorites" icon={Heart} href="/watchlist" items={favorites} />
       <Row title="Watch History" icon={History} href="/history" items={historyItems} />
       <Row title="Recently Added Sources" icon={Database} href="/sources" items={sources} />
