@@ -117,6 +117,7 @@ function getPreviewEmbed(item: any) {
 export default function SourcesPage() {
   const [sources, setSources] = useState<any[]>([]);
   const [message, setMessage] = useState('');
+  const [optimizing, setOptimizing] = useState(false);
   const [active, setActive] = useState<any>(null);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -137,6 +138,28 @@ export default function SourcesPage() {
   useEffect(() => {
     loadSources();
   }, []);
+
+
+  async function autoOptimize() {
+    try {
+      setOptimizing(true);
+      setMessage('⏳ Auto optimize rulează...');
+
+      await apiFetch('/sources/normalize', { method: 'POST' });
+      const result = await apiFetch('/sources/auto-optimize', { method: 'POST' });
+
+      setMessage(
+        `✅ Auto optimize complet · providers: ${result.steps?.[0]?.updated || 0} · keys: ${result.steps?.[1]?.updated || 0} · thumbs: ${result.steps?.[2]?.updated || 0}`
+      );
+
+      await loadSources();
+    } catch (error) {
+      console.error(error);
+      setMessage('❌ Auto optimize failed');
+    } finally {
+      setOptimizing(false);
+    }
+  }
 
   async function normalizeProviders() {
     try {
@@ -337,6 +360,13 @@ export default function SourcesPage() {
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            onClick={autoOptimize}
+            disabled={optimizing}
+            className="rounded-2xl bg-[#00E0A8] px-6 py-3 font-black text-black disabled:opacity-50"
+          >
+            {optimizing ? 'Optimizing...' : 'Auto Optimize Library'}
+          </button>
           <button onClick={normalizeProviders} className="rounded-2xl bg-white/10 px-5 py-3 font-black">
             Normalize Providers
           </button>
