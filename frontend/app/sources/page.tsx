@@ -175,6 +175,7 @@ export default function SourcesPage() {
     try {
       const data = await apiPost('/sources/normalize-thumbnails', {});
       setMessage(`✅ Thumbnails generate: ${data.updated || 0}`);
+      await apiFetch('/sources/auto-optimize', { method: 'POST' }).catch(() => null);
       await loadSources();
     } catch {
       setMessage('❌ Generare thumbnails eșuată');
@@ -187,6 +188,7 @@ export default function SourcesPage() {
       setMessage('⏳ Generez content keys...');
       const data = await apiPost('/sources/backfill-content-keys', {});
       setMessage(`✅ Content keys generate: ${data.updated || 0}/${data.scanned || 0}`);
+      await apiFetch('/sources/auto-optimize', { method: 'POST' }).catch(() => null);
       await loadSources();
     } catch {
       setMessage('❌ Backfill content keys eșuat');
@@ -198,6 +200,7 @@ export default function SourcesPage() {
       setMessage('⏳ Curăț duplicate...');
       const data = await apiPost('/sources/merge-duplicates', {});
       setMessage(`✅ Duplicate șterse: ${data.removed || 0}, grupuri: ${data.groups || 0}`);
+      await apiFetch('/sources/auto-optimize', { method: 'POST' }).catch(() => null);
       await loadSources();
     } catch {
       setMessage('❌ Merge duplicates eșuat');
@@ -215,6 +218,7 @@ export default function SourcesPage() {
       });
 
       setMessage(`✅ Metadata îmbogățită: ${data.updated || 0}/${data.total || 0}, eșuate: ${data.failed || 0}`);
+      await apiFetch('/sources/auto-optimize', { method: 'POST' }).catch(() => null);
       await loadSources();
     } catch (error: any) {
       setMessage(`❌ Enrich metadata eșuat: ${error?.message || 'unknown error'}`);
