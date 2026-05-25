@@ -213,6 +213,36 @@ export default function WatchPage({
     }
   }
 
+
+  async function saveHlsSource() {
+    if (!item || !transcodeJob?.hlsUrl) {
+      return showMessage('❌ Nu există HLS generat');
+    }
+
+    try {
+      await apiPost('/sources', {
+        title: item.title || 'Untitled HLS',
+        description: item.description || '',
+        url: transcodeJob.hlsUrl,
+        provider: 'hls',
+        type: 'hls',
+        category: item.content_type || item.metadata?.category || 'custom',
+        poster: posterOf(item),
+        metadata: {
+          contentId: String(item.content_id || ''),
+          content_key: item.content_key,
+          transcodedFrom: item.url || item.embed_url,
+          jobId: transcodeJob.id,
+          sourceType: 'hls',
+        },
+      });
+
+      showMessage('✅ Sursa HLS a fost salvată');
+    } catch {
+      showMessage('❌ Nu s-a putut salva sursa HLS');
+    }
+  }
+
   if (loading) {
     return <main className="min-h-screen bg-black p-10 text-white">Se încarcă...</main>;
   }
@@ -318,6 +348,12 @@ export default function WatchPage({
                   {probe?.needsTranscoding && (
                     <button onClick={startTranscode} className="rounded-2xl bg-[#00E0A8] px-6 py-4 font-bold text-black">
                       Convert to HLS
+                    </button>
+                  )}
+
+                  {transcodeJob?.status === 'completed' && transcodeJob?.hlsUrl && (
+                    <button onClick={saveHlsSource} className="rounded-2xl bg-white px-6 py-4 font-bold text-black">
+                      Save HLS Source
                     </button>
                   )}
               <button onClick={addToLibrary} className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-6 py-4 font-bold">
