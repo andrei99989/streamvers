@@ -16,6 +16,12 @@ export default function TranscodingPage() {
     setLoading(false);
   }
 
+
+  async function retryJob(jobId: string) {
+    await apiFetch(`/stream/jobs/${jobId}/retry`, { method: 'POST' }).catch(() => null);
+    await loadJobs();
+  }
+
   useEffect(() => {
     loadJobs();
     const timer = setInterval(loadJobs, 5000);
@@ -67,11 +73,19 @@ export default function TranscodingPage() {
 
               <p className="mt-4 break-all text-xs text-white/40">{job.url}</p>
 
-              {job.hlsUrl && (
-                <Link href={`/player?url=${encodeURIComponent(job.hlsUrl)}`} className="mt-4 inline-block rounded-2xl bg-white px-5 py-3 font-black text-black">
-                  Open HLS
-                </Link>
-              )}
+              <div className="mt-4 flex flex-wrap gap-3">
+                {job.hlsUrl && (
+                  <Link href={`/player?url=${encodeURIComponent(job.hlsUrl)}`} className="inline-block rounded-2xl bg-white px-5 py-3 font-black text-black">
+                    Open HLS
+                  </Link>
+                )}
+
+                {job.status === 'failed' && (
+                  <button onClick={() => retryJob(job.id)} className="rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black">
+                    Retry
+                  </button>
+                )}
+              </div>
 
               {job.error && <div className="mt-3 text-sm text-red-300">{job.error}</div>}
             </div>

@@ -343,6 +343,50 @@ router.get('/jobs/:jobId', (req, res) => {
   return res.json(job);
 });
 
+
+router.post('/jobs/:jobId/retry', async (req, res) => {
+  try {
+    await ensureJobsTable();
+
+    const existing = jobs.get(req.params.jobId) || null;
+
+    let sourceJob = existing;
+
+    if (!sourceJob) {
+      const result = await query(
+        `
+        SELECT
+          id,
+          url,
+          quality
+        FROM transcode_jobs
+        WHERE id = $1
+        LIMIT 1
+        `,
+        [req.params.jobId]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ error: 'JOB_NOT_FOUND' });
+      }
+
+      sourceJob = result.rows[0];
+    }
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const job = createTranscodeJob({
+      url: sourceJob.url,
+      quality: sourceJob.quality || '720p',
+      baseUrl,
+    });
+
+    return res.status(202).json(job);
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Retry failed' });
+  }
+});
+
+
 router.get('/hls/:jobId/:file', (req, res) => {
   const jobId = String(req.params.jobId || '');
   const file = String(req.params.file || '');
