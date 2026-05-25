@@ -269,7 +269,37 @@ router.post('/', async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const transcodeJob = needsAutoTranscode
-      ? createTranscodeJob({ url: finalUrl, quality: '720p', baseUrl })
+      ? createTranscodeJob({
+          url: finalUrl,
+          quality: '720p',
+          baseUrl,
+          onComplete: async (job) => {
+            await query(
+              `
+              INSERT INTO sources
+              (content_id, url, canonical_url, source_type, is_primary, quality, language, metadata)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+              `,
+              [
+                contentId,
+                job.hlsUrl,
+                canonicalUrl(job.hlsUrl),
+                'hls',
+                false,
+                job.quality || '720p',
+                language || 'ro',
+                {
+                  provider: 'hls',
+                  sourceType: 'hls',
+                  transcodedFrom: finalUrl,
+                  transcodeJobId: job.id,
+                  contentKey,
+                  autoCreated: true,
+                },
+              ]
+            );
+          },
+        })
       : null;
 
     res.status(201).json({

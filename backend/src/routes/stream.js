@@ -151,7 +151,7 @@ export function qualityArgs(quality = '720p') {
 }
 
 
-export function createTranscodeJob({ url, quality = '720p', baseUrl = '' }) {
+export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComplete = null }) {
   ensureTranscodeRoot();
 
   const jobId = safeJobId();
@@ -211,6 +211,13 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '' }) {
     if (code === 0 && fs.existsSync(output)) {
       job.status = 'completed';
       job.progress = 100;
+
+      if (typeof onComplete === 'function') {
+        Promise.resolve(onComplete(job)).catch((error) => {
+          job.error = error.message || 'onComplete failed';
+          console.error('transcode onComplete failed', error);
+        });
+      }
     } else {
       job.status = 'failed';
       job.error = `ffmpeg exited with code ${code}`;
