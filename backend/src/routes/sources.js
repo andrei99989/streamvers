@@ -406,6 +406,7 @@ router.post('/migrate-provider', async (_req, res) => {
 router.post('/normalize-thumbnails', async (_req, res) => {
   try {
     await query(`ALTER TABLE sources ADD COLUMN IF NOT EXISTS poster TEXT DEFAULT ''`);
+  await query(`ALTER TABLE sources ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb`);
 
     const result = await query(`
       UPDATE sources
@@ -546,5 +547,108 @@ router.get('/:id', async (req, res) => {
     return res.status(500).json({ error: 'SOURCE_LOOKUP_FAILED' });
   }
 });
+
+
+router.post('/normalize', async (_req, res) => {
+  try {
+    await ensureColumns();
+
+    const result = await query(`
+      UPDATE sources
+      SET
+        provider = COALESCE(NULLIF(provider, ''), NULLIF(source_type, ''), 'source'),
+        source_type = COALESCE(NULLIF(source_type, ''), NULLIF(provider, ''), 'external'),
+        metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('normalizedAt', NOW())
+      WHERE provider IS NULL
+         OR provider = ''
+         OR source_type IS NULL
+         OR source_type = ''
+      RETURNING id
+    `);
+
+    res.json({ ok: true, updated: result.rowCount });
+  } catch (error) {
+    console.error('POST /sources/normalize failed', error);
+    res.status(500).json({ error: error.message || 'Normalize providers failed' });
+  }
+});
+
+
+
+router.post('/auto-optimize', async (_req, res) => {
+  try {
+    await ensureColumns();
+
+    const normalized = await query(`
+      UPDATE sources
+      SET
+        provider = COALESCE(NULLIF(provider, ''), NULLIF(source_type, ''), 'source'),
+        source_type = COALESCE(NULLIF(source_type, ''), NULLIF(provider, ''), 'external'),
+        metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('autoOptimized', true, 'optimizedAt', NOW())
+      WHERE provider IS NULL
+         OR provider = ''
+         OR source_type IS NULL
+         OR source_type = ''
+      RETURNING id
+    `);
+
+    const rows = await query(`
+      SELECT
+        s.id,
+        COALESCE(c.title, 'untitled') AS title,
+        COALESCE(c.type, 'custom') AS category
+      FROM sources s
+      LEFT JOIN contents c ON c.id = s.content_id
+      WHERE s.metadata->>'contentKey' IS NULL
+    `);
+
+    let keys = 0;
+
+    for (const row of rows.rows) {
+      const key = buildContentKey(row.title, row.category, '');
+
+      await query(
+        `
+        UPDATE sources
+        SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('contentKey', $1::text)
+        WHERE id = $2
+        `,
+        [key, row.id]
+      );
+
+      keys++;
+    }
+
+    const thumbnails = await query(`
+      UPDATE sources
+      SET poster =
+        CASE
+          WHEN url ILIKE '%/embed/%'
+            THEN 'https://img.youtube.com/vi/' || split_part(split_part(url, '/embed/', 2), '?', 1) || '/hqdefault.jpg'
+          WHEN url ILIKE '%watch?v=%'
+            THEN 'https://img.youtube.com/vi/' || split_part(split_part(url, 'watch?v=', 2), '&', 1) || '/hqdefault.jpg'
+          WHEN url ILIKE '%youtu.be/%'
+            THEN 'https://img.youtube.com/vi/' || split_part(split_part(url, 'youtu.be/', 2), '?', 1) || '/hqdefault.jpg'
+          ELSE poster
+        END
+      WHERE (poster IS NULL OR poster = '')
+        AND (url ILIKE '%youtube%' OR url ILIKE '%youtu.be/%')
+      RETURNING id
+    `);
+
+    res.json({
+      ok: true,
+      steps: [
+        { step: 'normalize-providers', updated: normalized.rowCount },
+        { step: 'backfill-content-keys', updated: keys },
+        { step: 'normalize-thumbnails', updated: thumbnails.rowCount },
+      ],
+    });
+  } catch (error) {
+    console.error('POST /sources/auto-optimize failed', error);
+    res.status(500).json({ ok: false, error: error.message || 'Auto optimize failed' });
+  }
+});
+
 
 export default router;
