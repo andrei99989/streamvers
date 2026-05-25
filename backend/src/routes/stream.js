@@ -131,8 +131,28 @@ router.get('/probe', async (req, res) => {
 });
 
 
+
+function qualityArgs(quality = '720p') {
+  const q = String(quality || '720p').toLowerCase();
+
+  if (q === '360p') {
+    return ['-vf', 'scale=-2:360', '-b:v', '800k', '-maxrate', '900k', '-bufsize', '1600k'];
+  }
+
+  if (q === '1080p') {
+    return ['-vf', 'scale=-2:1080', '-b:v', '5000k', '-maxrate', '5500k', '-bufsize', '10000k'];
+  }
+
+  if (q === 'source') {
+    return [];
+  }
+
+  return ['-vf', 'scale=-2:720', '-b:v', '2500k', '-maxrate', '2800k', '-bufsize', '5000k'];
+}
+
 router.post('/transcode', async (req, res) => {
   const url = String(req.body?.url || '').trim();
+  const quality = String(req.body?.quality || '720p').trim();
 
   if (!url) {
     return res.status(400).json({ error: 'MISSING_URL' });
@@ -155,6 +175,7 @@ router.post('/transcode', async (req, res) => {
     hlsUrl: publicHlsUrl(req, jobId),
     createdAt: new Date().toISOString(),
     error: '',
+    quality,
   };
 
   jobs.set(jobId, job);
@@ -165,6 +186,7 @@ router.post('/transcode', async (req, res) => {
     '-c:v', 'libx264',
     '-preset', 'veryfast',
     '-crf', '23',
+    ...qualityArgs(quality),
     '-c:a', 'aac',
     '-b:a', '128k',
     '-f', 'hls',
