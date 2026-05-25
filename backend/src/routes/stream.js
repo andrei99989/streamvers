@@ -3,11 +3,63 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { spawn } from 'child_process';
+import { query } from '../db/postgres.js';
 
 const router = Router();
 
 const jobs = new Map();
 const TRANSCODE_ROOT = path.resolve(process.cwd(), 'backend/storage/transcodes');
+
+
+async function ensureJobsTable() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS transcode_jobs (
+      id TEXT PRIMARY KEY,
+      url TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      progress INTEGER DEFAULT 0,
+      output TEXT,
+      hls_url TEXT,
+      quality TEXT,
+      error TEXT DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+}
+
+async function saveJob(job) {
+  await ensureJobsTable();
+
+  await query(
+    `
+    INSERT INTO transcode_jobs
+      (id, url, status, progress, output, hls_url, quality, error, created_at, updated_at)
+    VALUES
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
+    ON CONFLICT (id) DO UPDATE SET
+      status = EXCLUDED.status,
+      progress = EXCLUDED.progress,
+      output = EXCLUDED.output,
+      hls_url = EXCLUDED.hls_url,
+      quality = EXCLUDED.quality,
+      error = EXCLUDED.error,
+      updated_at = NOW()
+    `,
+    [
+      job.id,
+      job.url,
+      job.status,
+      Number(job.progress || 0),
+      job.output || '',
+      job.hlsUrl || '',
+      job.quality || 'auto',
+      job.error || '',
+      job.createdAt || new Date().toISOString(),
+    ]
+  );
+}
+
 
 function ensureTranscodeRoot() {
   fs.mkdirSync(TRANSCODE_ROOT, { recursive: true });
@@ -176,6 +228,7 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
   };
 
   jobs.set(jobId, job);
+  saveJob(job).catch((error) => console.error('save transcode job failed', error));
 
   const args = [
     '-y',
@@ -199,18 +252,21 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
     const text = chunk.toString();
     if (text.includes('time=')) {
       job.progress = Math.min(99, job.progress + 3);
+      saveJob(job).catch(() => null);
     }
   });
 
   ffmpeg.on('error', (error) => {
     job.status = 'failed';
     job.error = error.message;
+    saveJob(job).catch(() => null);
   });
 
   ffmpeg.on('close', (code) => {
     if (code === 0 && fs.existsSync(output)) {
       job.status = 'completed';
       job.progress = 100;
+      saveJob(job).catch(() => null);
 
       if (typeof onComplete === 'function') {
         Promise.resolve(onComplete(job)).catch((error) => {
@@ -221,6 +277,7 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
     } else {
       job.status = 'failed';
       job.error = `ffmpeg exited with code ${code}`;
+      saveJob(job).catch(() => null);
     }
   });
 
@@ -242,12 +299,38 @@ router.post('/transcode', async (req, res) => {
 });
 
 
-router.get('/jobs', (_req, res) => {
-  const items = Array.from(jobs.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+router.get('/jobs', async (_req, res) => {
+  try {
+    await ensureJobsTable();
 
-  return res.json({ items });
+    const result = await query(`
+      SELECT
+        id,
+        url,
+        status,
+        progress,
+        output,
+        hls_url AS "hlsUrl",
+        quality,
+        error,
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM transcode_jobs
+      ORDER BY created_at DESC
+      LIMIT 100
+    `);
+
+    const memoryItems = Array.from(jobs.values());
+    const byId = new Map(result.rows.map((item) => [item.id, item]));
+
+    for (const item of memoryItems) {
+      byId.set(item.id, item);
+    }
+
+    return res.json({ items: Array.from(byId.values()) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Jobs list failed' });
+  }
 });
 
 router.get('/jobs/:jobId', (req, res) => {
