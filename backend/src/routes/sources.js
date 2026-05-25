@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { query } from '../db/postgres.js';
+import { createTranscodeJob } from './stream.js';
 import { getSourceThumbnail } from '../utils/thumbnails.js';
 import { enrichWithTmdb } from '../services/tmdbService.js';
 
@@ -262,7 +263,17 @@ router.post('/', async (req, res) => {
       console.error('auto optimize after source create failed', error);
     });
 
+    const needsAutoTranscode = ['mkv', 'avi', 'mov'].some((ext) =>
+      String(finalUrl || '').toLowerCase().split('?')[0].endsWith(`.${ext}`)
+    );
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const transcodeJob = needsAutoTranscode
+      ? createTranscodeJob({ url: finalUrl, quality: '720p', baseUrl })
+      : null;
+
     res.status(201).json({
+      transcodeJob,
       id: result.rows[0].id,
       contentId,
       content_id: contentId,

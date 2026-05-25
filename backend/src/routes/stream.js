@@ -132,7 +132,7 @@ router.get('/probe', async (req, res) => {
 
 
 
-function qualityArgs(quality = '720p') {
+export function qualityArgs(quality = '720p') {
   const q = String(quality || '720p').toLowerCase();
 
   if (q === '360p') {
@@ -150,14 +150,8 @@ function qualityArgs(quality = '720p') {
   return ['-vf', 'scale=-2:720', '-b:v', '2500k', '-maxrate', '2800k', '-bufsize', '5000k'];
 }
 
-router.post('/transcode', async (req, res) => {
-  const url = String(req.body?.url || '').trim();
-  const quality = String(req.body?.quality || '720p').trim();
 
-  if (!url) {
-    return res.status(400).json({ error: 'MISSING_URL' });
-  }
-
+export function createTranscodeJob({ url, quality = '720p', baseUrl = '' }) {
   ensureTranscodeRoot();
 
   const jobId = safeJobId();
@@ -165,6 +159,9 @@ router.post('/transcode', async (req, res) => {
   fs.mkdirSync(jobDir, { recursive: true });
 
   const output = path.join(jobDir, 'master.m3u8');
+  const hlsUrl = baseUrl
+    ? `${baseUrl}/stream/hls/${jobId}/master.m3u8`
+    : `/stream/hls/${jobId}/master.m3u8`;
 
   const job = {
     id: jobId,
@@ -172,7 +169,7 @@ router.post('/transcode', async (req, res) => {
     status: 'running',
     progress: 0,
     output,
-    hlsUrl: publicHlsUrl(req, jobId),
+    hlsUrl,
     createdAt: new Date().toISOString(),
     error: '',
     quality,
@@ -219,6 +216,20 @@ router.post('/transcode', async (req, res) => {
       job.error = `ffmpeg exited with code ${code}`;
     }
   });
+
+  return job;
+}
+
+router.post('/transcode', async (req, res) => {
+  const url = String(req.body?.url || '').trim();
+  const quality = String(req.body?.quality || '720p').trim();
+
+  if (!url) {
+    return res.status(400).json({ error: 'MISSING_URL' });
+  }
+
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const job = createTranscodeJob({ url, quality, baseUrl });
 
   return res.status(202).json(job);
 });
