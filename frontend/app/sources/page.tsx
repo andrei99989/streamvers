@@ -299,6 +299,9 @@ export default function SourcesPage() {
     saveLocal(next);
 
     if (String(active?.id) === String(id)) setActive(null);
+
+    await apiFetch('/sources/auto-optimize', { method: 'POST' }).catch(() => null);
+    await loadSources();
   }
 
   async function addToLibrary(item: any) {
