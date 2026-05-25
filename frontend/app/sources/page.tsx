@@ -269,6 +269,9 @@ export default function SourcesPage() {
       const created = await res.json();
       setSources([created, ...sources]);
       setActive(created);
+
+      await apiFetch('/sources/auto-optimize', { method: 'POST' }).catch(() => null);
+      await loadSources();
     } catch {
       const created = {
         id: crypto.randomUUID(),
