@@ -248,6 +248,20 @@ router.post('/', async (req, res) => {
       [contentId, finalUrl, finalCanonicalUrl, finalSourceType, true, quality || 'auto', language || 'ro']
     );
 
+    query(`
+      UPDATE sources
+      SET
+        provider = COALESCE(NULLIF(provider, ''), source_type, 'source'),
+        metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+          'contentKey', $1::text,
+          'autoOptimized', true,
+          'optimizedAt', NOW()
+        )
+      WHERE id = $2
+    `, [contentKey, result.rows[0].id]).catch((error) => {
+      console.error('auto optimize after source create failed', error);
+    });
+
     res.status(201).json({
       id: result.rows[0].id,
       contentId,
