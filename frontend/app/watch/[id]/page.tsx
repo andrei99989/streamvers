@@ -196,7 +196,20 @@ export default function WatchPage({
           const updated = await apiFetch(`/stream/jobs/${job.id}`);
           setTranscodeJob(updated);
 
-          if (updated.status === 'completed' || updated.status === 'failed') {
+          if (updated.status === 'completed' && updated.hlsUrl) {
+            setItem({
+              ...item,
+              id: `${item.id}-hls-preview`,
+              url: updated.hlsUrl,
+              embed_url: updated.hlsUrl,
+              provider: 'hls',
+              type: 'hls',
+              source_type: 'hls',
+            });
+            window.clearInterval(timer);
+          }
+
+          if (updated.status === 'failed') {
             window.clearInterval(timer);
           }
         } catch {
