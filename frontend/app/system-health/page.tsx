@@ -93,6 +93,7 @@ export default function SystemHealthPage() {
   const [loading, setLoading] = useState(false);
   const [healthFilter, setHealthFilter] = useState('all');
   const [healthSearch, setHealthSearch] = useState('');
+  const [registrySearch, setRegistrySearch] = useState('');
 
   async function loadStats() {
     setStatsLoading(true);
@@ -186,6 +187,25 @@ export default function SystemHealthPage() {
         .includes(query);
 
     return matchesFilter && matchesSearch;
+  });
+
+
+  const registryItems = results.find((x) => x.name === 'Registry')?.preview || [];
+  const filteredRegistryItems = registryItems.filter((api: any) => {
+    const query = registrySearch.trim().toLowerCase();
+
+    if (!query) return true;
+
+    return [
+      api.name,
+      api.type,
+      api.status,
+      api.configured ? 'configured' : 'missing',
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(query);
   });
 
   return (
@@ -314,12 +334,24 @@ export default function SystemHealthPage() {
         ))}
       </div>
 
-      {results.find((x) => x.name === 'Registry')?.preview?.length > 0 && (
+      {registryItems.length > 0 && (
         <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
-          <h2 className="mb-4 text-2xl font-black">Toate API-urile din Registry</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-black">Toate API-urile din Registry</h2>
+            <div className="text-sm font-bold text-white/40">
+              {filteredRegistryItems.length}/{registryItems.length}
+            </div>
+          </div>
+
+          <input
+            value={registrySearch}
+            onChange={(e) => setRegistrySearch(e.target.value)}
+            placeholder="Search registry... tmdb, subtitles, active, missing-key"
+            className="mb-4 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 font-bold outline-none focus:border-[#6A4CFF]"
+          />
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {results.find((x) => x.name === 'Registry')?.preview?.map((api: any) => (
+            {filteredRegistryItems.map((api: any) => (
               <div key={api.name} className="rounded-2xl bg-black/40 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
