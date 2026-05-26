@@ -123,8 +123,11 @@ export default function SystemHealthPage() {
     for (const [name, path] of checks) {
       const started = Date.now();
 
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 8000);
+
       try {
-        const res = await fetch(`${API}${path}`);
+        const res = await fetch(`${API}${path}`, { signal: controller.signal });
         const json = await res.json();
 
         const preview = sanitizeHealthPreview(name, json);
@@ -138,14 +141,21 @@ export default function SystemHealthPage() {
           preview
         });
       } catch (error: any) {
+        const timedOut = error?.name === 'AbortError';
+
         next.push({
           name,
           path,
           ok: false,
           status: 0,
           ms: Date.now() - started,
-          preview: { error: error.message }
+          preview: {
+            status: timedOut ? 'timeout' : 'error',
+            error: timedOut ? 'Health check timed out after 8s' : error.message,
+          }
         });
+      } finally {
+        window.clearTimeout(timeout);
       }
     }
 
