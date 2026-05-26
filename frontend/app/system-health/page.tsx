@@ -97,6 +97,7 @@ export default function SystemHealthPage() {
 
   useEffect(() => {
     loadStats();
+    runChecks();
   }, []);
 
   async function runChecks() {
