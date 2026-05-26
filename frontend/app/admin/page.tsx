@@ -1,6 +1,7 @@
 'use client';
 
 import { API } from '../../lib/api';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Database, Download, Heart, Layers3, PlayCircle, Puzzle, RefreshCw, Shield, Users } from 'lucide-react';
 
@@ -59,6 +60,25 @@ export default function AdminPage() {
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
+      </section>
+
+      <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          ['Admin Dashboard', '/admin-dashboard'],
+          ['System Health', '/system-health'],
+          ['Sources', '/sources'],
+          ['Transcoding Jobs', '/transcoding'],
+        ].map(([label, href]) => (
+          <Link
+            key={href}
+            href={href}
+            className="glass rounded-[2rem] p-5 transition hover:bg-white/10"
+          >
+            <div className="text-sm font-black uppercase text-white/40">Quick Action</div>
+            <div className="mt-3 text-2xl font-black">{label}</div>
+            <div className="mt-2 text-xs text-[#00E0A8]">{href}</div>
+          </Link>
+        ))}
       </section>
 
       <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
