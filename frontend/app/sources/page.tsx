@@ -120,6 +120,7 @@ export default function SourcesPage() {
   const [optimizing, setOptimizing] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [lastOptimizedAt, setLastOptimizedAt] = useState('');
+  const [smartEngineHealth, setSmartEngineHealth] = useState<any>(null);
   const [showEngineLogs, setShowEngineLogs] = useState(false);
   const [engineLogs, setEngineLogs] = useState<any[]>([]);
   const [active, setActive] = useState<any>(null);
@@ -128,6 +129,12 @@ export default function SourcesPage() {
   const [category, setCategory] = useState('custom');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+
+
+  async function loadSmartEngineHealth() {
+    const data = await apiFetch('/health').catch(() => null);
+    setSmartEngineHealth(data?.smartEngine || null);
+  }
 
   async function loadSources() {
     try {
@@ -141,6 +148,7 @@ export default function SourcesPage() {
 
   useEffect(() => {
     loadSources();
+    loadSmartEngineHealth();
   }, []);
 
 
@@ -390,9 +398,14 @@ export default function SourcesPage() {
 
         <div className="mt-6 rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-5">
           <div className="text-sm font-black uppercase text-[#00E0A8]">Smart Library Engine</div>
-          <div className="mt-2 text-2xl font-black">Status: Active</div>
+          <div className="mt-2 text-2xl font-black">
+            Status: {smartEngineHealth?.enabled ? 'Active' : 'Checking...'}
+          </div>
           <div className="mt-1 text-sm text-white/50">
             Auto normalizează providers, keys, duplicates, thumbnails și metadata.
+          </div>
+          <div className="mt-2 text-xs font-bold text-[#00E0A8]">
+            Schedule: every {smartEngineHealth?.intervalMinutes || 30} min
           </div>
           <div className="mt-2 text-xs font-bold text-white/40">
             Last optimization: {lastOptimizedAt || 'not yet in this session'}
