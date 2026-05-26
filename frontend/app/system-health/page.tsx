@@ -39,6 +39,21 @@ function isHealthOk(name: string, res: Response, json: any) {
 }
 
 
+
+function statusBadge(item: any) {
+  const status = item.preview?.status || (item.ok ? 'active' : 'error');
+
+  if (status === 'blocked') return 'bg-yellow-500/20 text-yellow-200';
+  if (status === 'missing-key') return 'bg-orange-500/20 text-orange-200';
+  if (status === 'broken' || status === 'error') return 'bg-red-500/20 text-red-200';
+  return 'bg-[#00E0A8]/20 text-[#00E0A8]';
+}
+
+function statusText(item: any) {
+  return item.preview?.status || (item.ok ? 'active' : 'error');
+}
+
+
 const checks = [
   ['Health', '/health'],
   ['Neon Sources', '/db/sources'],
@@ -96,13 +111,15 @@ export default function SystemHealthPage() {
         const res = await fetch(`${API}${path}`);
         const json = await res.json();
 
+        const preview = sanitizeHealthPreview(name, json);
+
         next.push({
           name,
           path,
-          ok: res.ok && !json.error,
+          ok: isHealthOk(name, res, json),
           status: res.status,
           ms: Date.now() - started,
-          preview: json
+          preview
         });
       } catch (error: any) {
         next.push({
@@ -239,13 +256,16 @@ export default function SystemHealthPage() {
               </div>
 
               {item.ok ? (
-                <CheckCircle2 className="text-[#00E0A8]" />
+                <CheckCircle2 className="shrink-0 text-[#00E0A8]" />
               ) : (
-                <XCircle className="text-red-400" />
+                <XCircle className="shrink-0 text-red-400" />
               )}
             </div>
 
-            <div className="mt-4 flex gap-2 text-xs">
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+              <span className={`rounded-full px-3 py-1 font-black uppercase ${statusBadge(item)}`}>
+                {statusText(item)}
+              </span>
               <span className="rounded-full bg-white/10 px-3 py-1">
                 HTTP {item.status}
               </span>
@@ -254,9 +274,26 @@ export default function SystemHealthPage() {
               </span>
             </div>
 
-            <pre className="mt-4 max-h-40 overflow-auto rounded-2xl bg-black/50 p-3 text-xs text-white/60">
-              {JSON.stringify(item.preview, null, 2).slice(0, 900)}
-            </pre>
+            {item.preview?.error && (
+              <div className="mt-4 rounded-2xl bg-black/40 p-3 text-sm text-red-200">
+                {item.preview.error}
+              </div>
+            )}
+
+            {item.preview?.hint && (
+              <div className="mt-2 rounded-2xl bg-white/5 p-3 text-xs text-white/50">
+                {item.preview.hint}
+              </div>
+            )}
+
+            <details className="mt-4">
+              <summary className="cursor-pointer text-xs font-black uppercase text-white/40">
+                Raw response
+              </summary>
+              <pre className="mt-3 max-h-40 overflow-auto rounded-2xl bg-black/50 p-3 text-xs text-white/60">
+                {JSON.stringify(item.preview, null, 2).slice(0, 900)}
+              </pre>
+            </details>
           </section>
         ))}
       </div>
