@@ -145,6 +145,13 @@ export default function SourcesPage() {
 
 
 
+
+  async function clearEngineLogs() {
+    await apiFetch('/sources/optimization-logs', { method: 'DELETE' }).catch(() => null);
+    setEngineLogs([]);
+    setMessage('✅ Smart Engine logs cleared');
+  }
+
   async function loadEngineLogs() {
     const data = await apiFetch('/sources/optimization-logs').catch(() => ({ items: [] }));
     setEngineLogs(data.items || []);
@@ -418,7 +425,12 @@ export default function SourcesPage() {
 
         {showEngineLogs && (
           <div className="mt-4 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4">
-            <div className="mb-3 text-lg font-black">Smart Engine Logs</div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-lg font-black">Smart Engine Logs</div>
+              <button onClick={clearEngineLogs} className="rounded-xl bg-red-500/20 px-4 py-2 text-xs font-black text-red-200">
+                Clear Logs
+              </button>
+            </div>
             {engineLogs.length === 0 ? (
               <div className="text-sm text-white/50">Nu există loguri încă.</div>
             ) : (
