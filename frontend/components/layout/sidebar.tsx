@@ -54,6 +54,7 @@ const sections = [
       ['🌍', 'Languages', '/languages'],
       ['⚙', 'Settings', '/settings'],
       ['🛠️', 'Admin', '/admin'],
+      ['🧭', 'Admin Dashboard', '/admin-dashboard'],
       ['📊', 'API Registry', '/api-registry'],
       ['✅', 'System Health', '/system-health'],
       ['📰', 'News Hub', '/news-hub'],
