@@ -92,6 +92,7 @@ export default function SystemHealthPage() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [healthFilter, setHealthFilter] = useState('all');
+  const [healthSearch, setHealthSearch] = useState('');
 
   async function loadStats() {
     setStatsLoading(true);
@@ -161,11 +162,30 @@ export default function SystemHealthPage() {
 
   const filteredResults = results.filter((item) => {
     const status = statusText(item);
+    const query = healthSearch.trim().toLowerCase();
 
-    if (healthFilter === 'all') return true;
-    if (healthFilter === 'errors') return !['active', 'blocked', 'missing-key'].includes(status);
+    const matchesFilter =
+      healthFilter === 'all'
+        ? true
+        : healthFilter === 'errors'
+          ? !['active', 'blocked', 'missing-key'].includes(status)
+          : status === healthFilter;
 
-    return status === healthFilter;
+    const matchesSearch =
+      !query ||
+      [
+        item.name,
+        item.path,
+        status,
+        item.preview?.error,
+        item.preview?.hint,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+
+    return matchesFilter && matchesSearch;
   });
 
   return (
@@ -259,6 +279,13 @@ export default function SystemHealthPage() {
           </div>
         )}
       </section>
+
+      <input
+        value={healthSearch}
+        onChange={(e) => setHealthSearch(e.target.value)}
+        placeholder="Search health checks... trakt, subtitles, neon, youtube"
+        className="mb-4 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 font-bold outline-none focus:border-[#6A4CFF]"
+      />
 
       <div className="mb-6 flex flex-wrap gap-3">
         <button
