@@ -138,6 +138,14 @@ export default function SystemHealthPage() {
     setLoading(false);
   }
 
+
+  const healthSummary = {
+    active: results.filter((item) => statusText(item) === 'active').length,
+    blocked: results.filter((item) => statusText(item) === 'blocked').length,
+    missingKey: results.filter((item) => statusText(item) === 'missing-key').length,
+    errors: results.filter((item) => !['active', 'blocked', 'missing-key'].includes(statusText(item))).length,
+  };
+
   return (
     <main className="min-h-screen bg-black p-4 text-white sm:p-8">
       <section className="mb-6 rounded-3xl border border-white/10 bg-gradient-to-br from-[#6A4CFF]/35 to-[#00E0A8]/15 p-5 sm:p-8">
@@ -155,6 +163,20 @@ export default function SystemHealthPage() {
         </p>
       </section>
 
+
+      <section className="mb-6 grid gap-3 md:grid-cols-4">
+        {[
+          ['Active', healthSummary.active, 'text-[#00E0A8]'],
+          ['Blocked', healthSummary.blocked, 'text-yellow-200'],
+          ['Missing Key', healthSummary.missingKey, 'text-orange-200'],
+          ['Errors', healthSummary.errors, 'text-red-200'],
+        ].map(([label, value, color]) => (
+          <div key={label} className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
+            <div className="text-xs font-black uppercase text-white/40">{label}</div>
+            <div className={`mt-2 text-4xl font-black ${color}`}>{value}</div>
+          </div>
+        ))}
+      </section>
 
       <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
