@@ -102,9 +102,25 @@ app.use('/sources', sourcesRoutes);
 
 const port = process.env.PORT || 4000;
 
+const SMART_ENGINE_INTERVAL_MS = Number(process.env.SMART_ENGINE_INTERVAL_MS || 30 * 60 * 1000);
+
+async function runSmartEngineSchedule() {
+  try {
+    const url = `http://localhost:${port}/sources/auto-optimize`;
+    await fetch(url, { method: 'POST' });
+    console.info('Smart Engine scheduled optimization completed');
+  } catch (error) {
+    console.error('Smart Engine scheduled optimization failed', error);
+  }
+}
+
+
 connectDB()
   .then(() => {
-    app.listen(port, () => console.info(`API on :${port}`));
+    app.listen(port, () => {
+      console.info(`API on :${port}`);
+      setInterval(runSmartEngineSchedule, SMART_ENGINE_INTERVAL_MS);
+    });
   })
   .catch((err) => {
     console.error(err);
