@@ -547,6 +547,22 @@ router.get('/by-content/:contentId', async (req, res) => {
   }
 });
 
+
+router.delete('/optimization-logs', async (_req, res) => {
+  try {
+    await ensureOptimizationLogsTable();
+
+    const result = await query(`
+      DELETE FROM source_optimization_logs
+      RETURNING id
+    `);
+
+    res.json({ ok: true, deleted: result.rowCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Clear optimization logs failed' });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     await ensureColumns();
@@ -563,6 +579,8 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: error.message || 'Delete failed' });
   }
 });
+
+
 
 
 
