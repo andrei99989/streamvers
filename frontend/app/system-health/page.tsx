@@ -40,6 +40,17 @@ function isHealthOk(name: string, res: Response, json: any) {
 
 
 
+
+function registryBadge(status: string) {
+  if (status === 'active') return 'bg-[#00E0A8]/20 text-[#00E0A8]';
+  if (status === 'blocked') return 'bg-yellow-500/20 text-yellow-200';
+  if (status === 'missing-key') return 'bg-orange-500/20 text-orange-200';
+  if (status === 'not-implemented') return 'bg-white/10 text-white/50';
+  if (status === 'broken') return 'bg-red-500/20 text-red-200';
+  return 'bg-white/10 text-white/60';
+}
+
+
 function statusBadge(item: any) {
   const status = item.preview?.status || (item.ok ? 'active' : 'error');
 
@@ -252,13 +263,18 @@ export default function SystemHealthPage() {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {results.find((x) => x.name === 'Registry')?.preview?.map((api: any) => (
               <div key={api.name} className="rounded-2xl bg-black/40 p-4">
-                <div className="font-black">{api.name}</div>
-                <div className="mt-1 text-xs text-white/50">{api.type}</div>
-                <div className="mt-3 text-xs">
-                  Status: <span className="font-black">{api.status}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-black">{api.name}</div>
+                    <div className="mt-1 text-xs text-white/50">{api.type}</div>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase ${registryBadge(api.status)}`}>
+                    {api.status}
+                  </span>
                 </div>
-                <div className="text-xs">
-                  Configured: <span className="font-black">{api.configured ? 'DA' : 'NU'}</span>
+
+                <div className="mt-3 text-xs text-white/50">
+                  Configured: <span className="font-black text-white">{api.configured ? 'DA' : 'NU'}</span>
                 </div>
               </div>
             ))}
