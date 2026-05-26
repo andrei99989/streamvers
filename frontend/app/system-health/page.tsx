@@ -94,6 +94,7 @@ export default function SystemHealthPage() {
   const [healthFilter, setHealthFilter] = useState('all');
   const [healthSearch, setHealthSearch] = useState('');
   const [registrySearch, setRegistrySearch] = useState('');
+  const [showRegistry, setShowRegistry] = useState(false);
 
   async function loadStats() {
     setStatsLoading(true);
@@ -337,12 +338,23 @@ export default function SystemHealthPage() {
       {registryItems.length > 0 && (
         <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-black">Toate API-urile din Registry</h2>
-            <div className="text-sm font-bold text-white/40">
-              {filteredRegistryItems.length}/{registryItems.length}
+            <div>
+              <h2 className="text-2xl font-black">Toate API-urile din Registry</h2>
+              <div className="mt-1 text-sm font-bold text-white/40">
+                {filteredRegistryItems.length}/{registryItems.length} rezultate
+              </div>
             </div>
+
+            <button
+              onClick={() => setShowRegistry((value) => !value)}
+              className="rounded-2xl bg-white/10 px-5 py-3 font-black"
+            >
+              {showRegistry ? 'Hide Registry' : 'Show Registry'}
+            </button>
           </div>
 
+          {showRegistry && (
+            <>
           <input
             value={registrySearch}
             onChange={(e) => setRegistrySearch(e.target.value)}
@@ -369,6 +381,8 @@ export default function SystemHealthPage() {
               </div>
             ))}
           </div>
+            </>
+          )}
         </section>
       )}
 
