@@ -220,6 +220,30 @@ export default function SystemHealthPage() {
       .includes(query);
   });
 
+
+  function exportHealthReport() {
+    const report = {
+      generatedAt: new Date().toISOString(),
+      summary: healthSummary,
+      stats,
+      registry: registryItems,
+      checks: results,
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], {
+      type: 'application/json',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = `streamverse-health-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main className="min-h-screen bg-black p-4 text-white sm:p-8">
       <section className="mb-6 rounded-3xl border border-white/10 bg-gradient-to-br from-[#6A4CFF]/35 to-[#00E0A8]/15 p-5 sm:p-8">
@@ -336,6 +360,14 @@ export default function SystemHealthPage() {
           className="rounded-2xl bg-[#6A4CFF] px-5 py-4 font-black"
         >
           {loading ? 'Se verifică...' : 'Rulează verificările'}
+        </button>
+
+        <button
+          onClick={exportHealthReport}
+          disabled={results.length === 0}
+          className="rounded-2xl bg-white px-5 py-4 font-black text-black disabled:opacity-50"
+        >
+          Export Report
         </button>
 
         {[
