@@ -91,6 +91,7 @@ export default function SystemHealthPage() {
   const [stats, setStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [healthFilter, setHealthFilter] = useState('all');
 
   async function loadStats() {
     setStatsLoading(true);
@@ -156,6 +157,16 @@ export default function SystemHealthPage() {
     missingKey: results.filter((item) => statusText(item) === 'missing-key').length,
     errors: results.filter((item) => !['active', 'blocked', 'missing-key'].includes(statusText(item))).length,
   };
+
+
+  const filteredResults = results.filter((item) => {
+    const status = statusText(item);
+
+    if (healthFilter === 'all') return true;
+    if (healthFilter === 'errors') return !['active', 'blocked', 'missing-key'].includes(status);
+
+    return status === healthFilter;
+  });
 
   return (
     <main className="min-h-screen bg-black p-4 text-white sm:p-8">
@@ -249,12 +260,32 @@ export default function SystemHealthPage() {
         )}
       </section>
 
-      <button
-        onClick={runChecks}
-        className="mb-6 rounded-2xl bg-[#6A4CFF] px-5 py-4 font-black"
-      >
-        {loading ? 'Se verifică...' : 'Rulează verificările'}
-      </button>
+      <div className="mb-6 flex flex-wrap gap-3">
+        <button
+          onClick={runChecks}
+          className="rounded-2xl bg-[#6A4CFF] px-5 py-4 font-black"
+        >
+          {loading ? 'Se verifică...' : 'Rulează verificările'}
+        </button>
+
+        {[
+          ['all', 'All'],
+          ['active', 'Active'],
+          ['blocked', 'Blocked'],
+          ['missing-key', 'Missing Key'],
+          ['errors', 'Errors'],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setHealthFilter(value)}
+            className={`rounded-2xl px-5 py-4 font-black ${
+              healthFilter === value ? 'bg-[#00E0A8] text-black' : 'bg-white/10 text-white'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       {results.find((x) => x.name === 'Registry')?.preview?.length > 0 && (
         <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
@@ -283,7 +314,7 @@ export default function SystemHealthPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {results.map((item) => (
+        {filteredResults.map((item) => (
           <section
             key={item.name}
             className="rounded-3xl border border-white/10 bg-white/[0.06] p-5"
