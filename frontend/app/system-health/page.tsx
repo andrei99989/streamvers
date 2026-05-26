@@ -94,6 +94,7 @@ export default function SystemHealthPage() {
   const [healthFilter, setHealthFilter] = useState('all');
   const [healthSearch, setHealthSearch] = useState('');
   const [registrySearch, setRegistrySearch] = useState('');
+  const [showPlatformStats, setShowPlatformStats] = useState(false);
   const [showRegistry, setShowRegistry] = useState(false);
 
   async function loadStats() {
@@ -252,14 +253,25 @@ export default function SystemHealthPage() {
       </section>
 
       <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.06] p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-black">Platform Stats</h2>
-          <button onClick={loadStats} className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-black">
-            {statsLoading ? 'Se actualizează...' : 'Refresh stats'}
-          </button>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black">Platform Stats</h2>
+            <div className="mt-1 text-sm text-white/40">
+              {stats ? `${stats.totals?.sources || 0} sources · ${stats.totals?.contents || 0} contents` : 'Stats loading'}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button onClick={loadStats} className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-black">
+              {statsLoading ? 'Se actualizează...' : 'Refresh stats'}
+            </button>
+            <button onClick={() => setShowPlatformStats((value) => !value)} className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-black">
+              {showPlatformStats ? 'Hide Stats' : 'Show Stats'}
+            </button>
+          </div>
         </div>
 
-        {stats ? (
+        {showPlatformStats && stats ? (
           <>
             <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
               {[
