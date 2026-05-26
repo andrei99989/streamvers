@@ -120,6 +120,8 @@ export default function SourcesPage() {
   const [optimizing, setOptimizing] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [lastOptimizedAt, setLastOptimizedAt] = useState('');
+  const [showEngineLogs, setShowEngineLogs] = useState(false);
+  const [engineLogs, setEngineLogs] = useState<any[]>([]);
   const [active, setActive] = useState<any>(null);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -141,6 +143,13 @@ export default function SourcesPage() {
     loadSources();
   }, []);
 
+
+
+  async function loadEngineLogs() {
+    const data = await apiFetch('/sources/optimization-logs').catch(() => ({ items: [] }));
+    setEngineLogs(data.items || []);
+    setShowEngineLogs((value) => !value);
+  }
 
   async function autoOptimize() {
     try {
@@ -397,8 +406,42 @@ export default function SourcesPage() {
             >
               {showAdvancedTools ? 'Hide Advanced Tools' : 'Advanced Tools'}
             </button>
+
+            <button
+              onClick={loadEngineLogs}
+              className="rounded-2xl bg-white/10 px-6 py-3 font-black"
+            >
+              {showEngineLogs ? 'Hide Logs' : 'View Logs'}
+            </button>
           </div>
         </div>
+
+        {showEngineLogs && (
+          <div className="mt-4 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4">
+            <div className="mb-3 text-lg font-black">Smart Engine Logs</div>
+            {engineLogs.length === 0 ? (
+              <div className="text-sm text-white/50">Nu există loguri încă.</div>
+            ) : (
+              <div className="grid gap-3">
+                {engineLogs.slice(0, 5).map((log) => (
+                  <div key={log.id} className="rounded-2xl bg-black/30 p-4 text-sm text-white/70">
+                    <div className="font-black text-white">#{log.id} · {new Date(log.createdAt).toLocaleString()}</div>
+                    <div className="mt-2 text-white/50">
+                      Total updated: {log.summary?.totalUpdated || 0}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(log.steps || []).map((step: any) => (
+                        <span key={step.step} className="rounded-full bg-white/10 px-3 py-1 text-xs font-black">
+                          {step.step}: {step.updated}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {showAdvancedTools && (
           <div className="mt-4 flex flex-wrap gap-3 rounded-[2rem] border border-white/10 bg-white/[0.03] p-4">
