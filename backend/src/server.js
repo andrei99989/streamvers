@@ -59,6 +59,11 @@ app.get('/health', (_req, res) => {
       omdb: Boolean(process.env.OMDB_API_KEY),
       tmdb: Boolean(process.env.TMDB_API_KEY),
       youtube: Boolean(process.env.YOUTUBE_API_KEY)
+    },
+    smartEngine: {
+      enabled: true,
+      intervalMs: SMART_ENGINE_INTERVAL_MS,
+      intervalMinutes: Math.round(SMART_ENGINE_INTERVAL_MS / 60000)
     }
   });
 });
