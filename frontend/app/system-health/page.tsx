@@ -6,6 +6,39 @@ import { Activity, CheckCircle2, XCircle } from 'lucide-react';
 
 
 
+
+function sanitizeHealthPreview(name: string, json: any) {
+  const error = String(json?.error || '').toLowerCase();
+
+  if (name === 'Trakt' || error.includes('cloudflare') || error.includes('attention required')) {
+    return {
+      error: 'Trakt blocked by Cloudflare on this environment',
+      status: 'blocked',
+      hint: 'Service is configured, dar request-ul este blocat de Cloudflare.',
+    };
+  }
+
+  if (name === 'OpenSubtitles' || error.includes('opensubtitles_api_key')) {
+    return {
+      error: 'OpenSubtitles API key missing',
+      status: 'missing-key',
+      hint: 'Adaugă OPENSUBTITLES_API_KEY în .env ca să activezi subtitrările.',
+    };
+  }
+
+  return json;
+}
+
+function isHealthOk(name: string, res: Response, json: any) {
+  const preview = sanitizeHealthPreview(name, json);
+
+  if (preview?.status === 'missing-key') return false;
+  if (preview?.status === 'blocked') return false;
+
+  return res.ok && !json?.error;
+}
+
+
 const checks = [
   ['Health', '/health'],
   ['Neon Sources', '/db/sources'],
