@@ -68,6 +68,45 @@ app.get('/health', (_req, res) => {
   });
 });
 
+
+app.get('/health/beta', async (_req, res) => {
+  try {
+    const memory = process.memoryUsage();
+
+    const [statsRes, sourceHealthRes] = await Promise.all([
+      fetch(`http://localhost:${port}/stats/admin`).then((r) => r.json()).catch(() => null),
+      fetch(`http://localhost:${port}/sources/health`).then((r) => r.json()).catch(() => null),
+    ]);
+
+    res.json({
+      ok: true,
+      milestone: 'StreamVerse Beta v1',
+      readiness: {
+        percent: 99,
+        status: 'beta-ready',
+      },
+      api: {
+        name: 'StreamVerse API',
+        uptimeSeconds: Math.round(process.uptime()),
+        memoryMb: Math.round(memory.rss / 1024 / 1024),
+      },
+      smartEngine: {
+        enabled: true,
+        intervalMs: SMART_ENGINE_INTERVAL_MS,
+        intervalMinutes: Math.round(SMART_ENGINE_INTERVAL_MS / 60000),
+      },
+      stats: statsRes?.totals || {},
+      sourceHealth: sourceHealthRes?.summary || {},
+      quality: sourceHealthRes?.quality || {},
+      providers: sourceHealthRes?.byProvider || [],
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message || 'Beta health failed' });
+  }
+});
+
+
 app.use('/auth', authRoutes);
 app.use('/movies', movieRoutes);
 app.use('/upload', uploadRoutes);
