@@ -18,6 +18,12 @@ import {
 type Source = {
   url: string;
   type?: 'iframe' | 'mp4' | 'webm' | 'hls' | string;
+  player?: {
+    recommended_player?: 'native' | 'hls' | 'embed' | 'external' | string;
+    capabilities?: string[];
+    player_score?: number;
+    player_flags?: string[];
+  };
   provider?: string;
   sourceId?: string;
   contentId?: string;
@@ -139,6 +145,27 @@ function formatTime(seconds: number) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+
+function resolveRuntimePlayer(source: Source) {
+  const recommended = source.player?.recommended_player;
+  const capabilities = source.player?.capabilities || [];
+  const detected = normalizeType(source.url || '', source.type || 'iframe');
+
+  if (recommended === 'hls' || capabilities.includes('HLS') || detected === 'hls') {
+    return 'hls';
+  }
+
+  if (recommended === 'native' || capabilities.includes('MP4') || capabilities.includes('WEBM') || ['mp4', 'webm'].includes(detected)) {
+    return detected === 'webm' ? 'webm' : 'mp4';
+  }
+
+  if (recommended === 'embed' || capabilities.includes('EMBED') || detected === 'iframe') {
+    return 'iframe';
+  }
+
+  return detected || 'iframe';
+}
+
 export default function UniversalPlayer({
   source,
   title = 'StreamVerse Player',
@@ -160,8 +187,8 @@ export default function UniversalPlayer({
   const [resumeTime, setResumeTime] = useState(0);
 
   const finalType = useMemo(
-    () => normalizeType(source?.url || '', source?.type || 'iframe'),
-    [source?.url, source?.type]
+    () => resolveRuntimePlayer(source),
+    [source]
   );
 
   const finalUrl = useMemo(() => normalizeEmbed(source?.url || ''), [source?.url]);

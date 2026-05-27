@@ -589,6 +589,7 @@ export default function SourcesPage() {
               contentId: String(active.content_id || ''),
               title: active.title,
               poster: getCardThumbnail(active),
+              player: active.player,
             }}
             title={active.title}
           />
