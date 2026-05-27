@@ -131,6 +131,48 @@ router.get('/health', async (_req, res) => {
       ORDER BY total DESC
     `);
 
+    const quality = await query(`
+      WITH scored AS (
+        SELECT
+          id,
+          GREATEST(
+            0,
+            100
+            - CASE WHEN status IS NOT NULL AND status <> 'active' THEN 45 ELSE 0 END
+            - CASE WHEN poster IS NULL OR poster = '' THEN 15 ELSE 0 END
+            - CASE WHEN source_type = 'external' THEN 20 ELSE 0 END
+            + CASE WHEN source_type IN ('mp4', 'webm', 'hls', 'iframe') THEN 10 ELSE 0 END
+            + CASE WHEN provider IS NOT NULL AND provider <> '' THEN 5 ELSE 0 END
+          )::int AS quality_score
+        FROM sources
+      )
+      SELECT
+        COALESCE(ROUND(AVG(quality_score))::int, 0) AS avg_score,
+        COUNT(*) FILTER (WHERE quality_score >= 90)::int AS excellent,
+        COUNT(*) FILTER (WHERE quality_score < 70)::int AS needs_fix
+      FROM scored
+    `);
+
+    const worstSources = await query(`
+      SELECT
+        id,
+        COALESCE(provider, source_type, 'unknown') AS provider,
+        COALESCE(source_type, 'unknown') AS type,
+        CASE WHEN poster IS NULL OR poster = '' THEN true ELSE false END AS missing_poster,
+        GREATEST(
+          0,
+          100
+          - CASE WHEN status IS NOT NULL AND status <> 'active' THEN 45 ELSE 0 END
+          - CASE WHEN poster IS NULL OR poster = '' THEN 15 ELSE 0 END
+          - CASE WHEN source_type = 'external' THEN 20 ELSE 0 END
+          + CASE WHEN source_type IN ('mp4', 'webm', 'hls', 'iframe') THEN 10 ELSE 0 END
+          + CASE WHEN provider IS NOT NULL AND provider <> '' THEN 5 ELSE 0 END
+        )::int AS quality_score
+      FROM sources
+      ORDER BY quality_score ASC, id DESC
+      LIMIT 8
+    `);
+
     res.json({
       ok: true,
       summary: summary.rows[0] || {
@@ -141,6 +183,12 @@ router.get('/health', async (_req, res) => {
         external: 0,
         streamable: 0,
       },
+      quality: quality.rows[0] || {
+        avg_score: 0,
+        excellent: 0,
+        needs_fix: 0,
+      },
+      worstSources: worstSources.rows,
       byProvider: byProvider.rows,
       byType: byType.rows,
       generatedAt: new Date().toISOString(),
