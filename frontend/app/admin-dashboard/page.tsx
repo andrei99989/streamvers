@@ -11,6 +11,8 @@ export default function AdminDashboardPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeMessage, setOptimizeMessage] = useState('');
 
   async function loadDashboard() {
     setLoading(true);
@@ -27,6 +29,24 @@ export default function AdminDashboardPage() {
     setJobs(jobsData.items || []);
     setLogs(logsData.items || []);
     setLoading(false);
+  }
+
+
+  async function runSmartOptimize() {
+    setOptimizing(true);
+    setOptimizeMessage('⏳ Smart Optimize rulează...');
+
+    try {
+      const result = await apiFetch('/sources/auto-optimize', { method: 'POST' });
+      const totalUpdated = (result.steps || []).reduce((sum: number, step: any) => sum + (step.updated || 0), 0);
+
+      setOptimizeMessage(`✅ Smart Optimize complet · total updated ${totalUpdated}`);
+      await loadDashboard();
+    } catch (error: any) {
+      setOptimizeMessage(`❌ Smart Optimize failed: ${error?.message || 'unknown error'}`);
+    } finally {
+      setOptimizing(false);
+    }
   }
 
   useEffect(() => {
@@ -48,12 +68,28 @@ export default function AdminDashboardPage() {
           Health, Smart Engine, Sources și Transcoding Jobs într-un singur loc.
         </p>
 
-        <button
-          onClick={loadDashboard}
-          className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black"
-        >
-          <RefreshCw size={18} /> {loading ? 'Refreshing...' : 'Refresh Dashboard'}
-        </button>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            onClick={loadDashboard}
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black"
+          >
+            <RefreshCw size={18} /> {loading ? 'Refreshing...' : 'Refresh Dashboard'}
+          </button>
+
+          <button
+            onClick={runSmartOptimize}
+            disabled={optimizing}
+            className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-black disabled:opacity-50"
+          >
+            {optimizing ? 'Optimizing...' : 'Run Smart Optimize'}
+          </button>
+        </div>
+
+        {optimizeMessage && (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 px-5 py-3 text-sm font-bold text-white/70">
+            {optimizeMessage}
+          </div>
+        )}
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
