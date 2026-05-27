@@ -162,9 +162,9 @@ export default function AdminDashboardPage() {
           {[
             ['Total', sourceHealth?.summary?.total || 0],
             ['Active', sourceHealth?.summary?.active || 0],
-            ['Inactive', sourceHealth?.summary?.inactive || 0],
             ['Missing Posters', sourceHealth?.summary?.missing_poster || 0],
-            ['Streamable', sourceHealth?.summary?.streamable || 0],
+            ['Quality Score', `${sourceHealth?.quality?.avg_score || 0}%`],
+            ['Needs Fix', sourceHealth?.quality?.needs_fix || 0],
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl bg-black/30 p-4">
               <div className="text-xs font-black uppercase text-white/40">{label}</div>
@@ -172,6 +172,35 @@ export default function AdminDashboardPage() {
             </div>
           ))}
         </div>
+
+        {(sourceHealth?.worstSources || []).length > 0 && (
+          <div className="mt-5">
+            <h3 className="mb-3 text-lg font-black">Lowest Quality Sources</h3>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {(sourceHealth?.worstSources || []).slice(0, 8).map((item: any) => (
+                <div key={item.id} className="rounded-2xl bg-black/30 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-black">#{item.id}</div>
+                    <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-black">
+                      {item.quality_score}%
+                    </div>
+                  </div>
+
+                  <div className="mt-2 text-sm text-white/50">
+                    {item.provider} · {item.type}
+                  </div>
+
+                  {item.missing_poster && (
+                    <div className="mt-2 text-xs font-bold text-orange-200">
+                      Missing poster
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {(sourceHealth?.byProvider || []).slice(0, 8).map((provider: any) => (
