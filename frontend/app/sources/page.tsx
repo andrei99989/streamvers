@@ -602,7 +602,7 @@ export default function SourcesPage() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filteredSources.map((item) => {
+          {filteredSources.map((item, index) => {
             const provider = getItemProvider(item);
             const previewEmbed = getPreviewEmbed(item);
             const thumbnail = getCardThumbnail(item);
@@ -612,7 +612,7 @@ export default function SourcesPage() {
 
             return (
               <div
-                key={item.id}
+                key={item.id || item.source_id || item.url || `${item.title || 'source'}-${index}`}
                 className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] transition duration-300 hover:-translate-y-1 hover:border-[#6A4CFF] hover:shadow-[0_0_40px_rgba(106,76,255,0.35)]"
               >
                 <div className="relative aspect-video overflow-hidden bg-black" style={{ minHeight: 260 }}><div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/20 to-transparent" />
