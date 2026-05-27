@@ -284,6 +284,57 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
   return job;
 }
 
+
+router.post('/resolve', async (req, res) => {
+  const inputUrl = String(req.body?.url || '').trim();
+
+  if (!inputUrl) {
+    return res.status(400).json({ ok: false, error: 'MISSING_URL' });
+  }
+
+  const provider = detectProvider(inputUrl);
+  const type = detectType(inputUrl);
+  const container = detectContainer(inputUrl);
+  const quality = estimateQuality(inputUrl);
+  const codec = estimateCodec(inputUrl);
+
+  const isDirectVideo = ['mp4', 'webm', 'hls'].includes(type);
+  const isKnownEmbed = ['youtube', 'vimeo', 'dailymotion', 'tiktok', 'rumble'].includes(provider);
+  const isProtectedShare = ['terabox', 'google-drive'].includes(provider);
+
+  let playableUrl = isDirectVideo ? inputUrl : '';
+  let playable = Boolean(playableUrl);
+  let recommendedAction = playable ? 'play_direct' : 'open_external';
+
+  if (isKnownEmbed) {
+    recommendedAction = 'embed';
+  }
+
+  if (isProtectedShare) {
+    recommendedAction = 'open_external_or_transcode';
+  }
+
+  return res.json({
+    ok: true,
+    provider,
+    inputUrl,
+    type,
+    container,
+    quality,
+    codec,
+    playable,
+    playableUrl,
+    canEmbed: isKnownEmbed,
+    canTranscode: !playable && Boolean(inputUrl),
+    protectedShare: isProtectedShare,
+    recommendedAction,
+    note: isProtectedShare
+      ? 'Protected share pages usually block iframe playback. Use external open or transcode after resolving a direct file URL.'
+      : '',
+  });
+});
+
+
 router.post('/transcode', async (req, res) => {
   const url = String(req.body?.url || '').trim();
   const quality = String(req.body?.quality || '720p').trim();
