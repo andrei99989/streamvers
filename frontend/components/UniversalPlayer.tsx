@@ -460,8 +460,27 @@ export default function UniversalPlayer({
 
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
 
-        <div className="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase text-white/80">
-          {provider}
+        <div className="absolute left-4 top-4 z-40 flex flex-wrap gap-2">
+          <div className="rounded-full bg-black/70 px-3 py-1 text-xs font-black uppercase text-white/80">
+            {provider}
+          </div>
+
+          <div className="rounded-full bg-[#00E0A8]/20 px-3 py-1 text-xs font-black uppercase text-[#00E0A8]">
+            Runtime: {runtimePlayer}
+          </div>
+
+          <div className="rounded-full bg-[#6A4CFF]/20 px-3 py-1 text-xs font-black uppercase text-[#B8A7FF]">
+            Score: {runtimeScore}
+          </div>
+
+          {runtimeFlags.slice(0, 2).map((flag) => (
+            <div
+              key={flag}
+              className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase text-white/70"
+            >
+              {flag}
+            </div>
+          ))}
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-4">
