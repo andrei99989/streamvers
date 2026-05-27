@@ -8,16 +8,25 @@ import { Database, Download, Heart, Layers3, PlayCircle, Puzzle, RefreshCw, Shie
 export default function AdminPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [sourceHealth, setSourceHealth] = useState<any>(null);
 
   async function loadStats() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/stats`);
-      const json = await res.json();
+      const [statsRes, sourceHealthRes] = await Promise.all([
+        fetch(`${API}/stats`),
+        fetch(`${API}/sources/health`),
+      ]);
+
+      const json = await statsRes.json();
+      const sourceHealthJson = await sourceHealthRes.json();
+
       setStats(json);
+      setSourceHealth(sourceHealthJson);
     } catch {
       setStats(null);
+      setSourceHealth(null);
     }
 
     setLoading(false);
@@ -98,6 +107,27 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+
+      {sourceHealth?.summary && (
+        <section className="glass mt-8 rounded-[2rem] p-6">
+          <h2 className="mb-5 text-2xl font-black">Source Health</h2>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {[
+              ['Total', sourceHealth.summary.total || 0],
+              ['Active', sourceHealth.summary.active || 0],
+              ['Inactive', sourceHealth.summary.inactive || 0],
+              ['Missing Posters', sourceHealth.summary.missing_poster || 0],
+              ['Streamable', sourceHealth.summary.streamable || 0],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl bg-black/30 p-4">
+                <div className="text-xs font-black uppercase text-white/40">{label}</div>
+                <div className="mt-2 text-4xl font-black">{value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {stats?.providers?.length > 0 && (
         <section className="glass mt-8 rounded-[2rem] p-6">
