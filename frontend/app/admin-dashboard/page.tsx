@@ -10,6 +10,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [sourceHealth, setSourceHealth] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeMessage, setOptimizeMessage] = useState('');
@@ -17,17 +18,19 @@ export default function AdminDashboardPage() {
   async function loadDashboard() {
     setLoading(true);
 
-    const [healthData, statsData, jobsData, logsData] = await Promise.all([
+    const [healthData, statsData, jobsData, logsData, sourceHealthData] = await Promise.all([
       apiFetch('/health').catch(() => null),
       apiFetch('/stats/admin').catch(() => null),
       apiFetch('/stream/jobs').catch(() => ({ items: [] })),
       apiFetch('/sources/optimization-logs').catch(() => ({ items: [] })),
+      apiFetch('/sources/health').catch(() => null),
     ]);
 
     setHealth(healthData);
     setStats(statsData);
     setJobs(jobsData.items || []);
     setLogs(logsData.items || []);
+    setSourceHealth(sourceHealthData);
     setLoading(false);
   }
 
@@ -138,6 +141,45 @@ export default function AdminDashboardPage() {
           <Video className="text-[#B8A7FF]" />
           <div className="mt-3 text-sm font-black uppercase text-white/40">Transcoding Jobs</div>
           <div className="mt-1 text-3xl font-black">{jobs.length}</div>
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black">Source Health</h2>
+            <div className="mt-1 text-sm text-white/40">
+              Monitorizare rapidă pentru providers, posters și streamable sources.
+            </div>
+          </div>
+
+          <Link href="/sources" className="rounded-xl bg-white/10 px-4 py-2 text-sm font-black">
+            Manage Sources
+          </Link>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {[
+            ['Total', sourceHealth?.summary?.total || 0],
+            ['Active', sourceHealth?.summary?.active || 0],
+            ['Inactive', sourceHealth?.summary?.inactive || 0],
+            ['Missing Posters', sourceHealth?.summary?.missing_poster || 0],
+            ['Streamable', sourceHealth?.summary?.streamable || 0],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl bg-black/30 p-4">
+              <div className="text-xs font-black uppercase text-white/40">{label}</div>
+              <div className="mt-2 text-3xl font-black">{value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {(sourceHealth?.byProvider || []).slice(0, 8).map((provider: any) => (
+            <div key={provider.provider} className="rounded-2xl bg-black/30 p-4">
+              <div className="font-black uppercase">{provider.provider}</div>
+              <div className="mt-2 text-sm text-white/50">{provider.total} sources</div>
+            </div>
+          ))}
         </div>
       </section>
 
