@@ -198,6 +198,11 @@ export default function UniversalPlayer({
     [source?.provider, source?.url]
   );
 
+  const runtimePlayer = source?.player?.recommended_player || finalType || 'external';
+  const runtimeScore = source?.player?.player_score || 0;
+  const runtimeFlags = source?.player?.player_flags || [];
+  const runtimeCapabilities = source?.player?.capabilities || [];
+
   useEffect(() => {
     setError('');
     setProgress(0);
