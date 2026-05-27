@@ -407,6 +407,40 @@ router.get('/jobs', async (_req, res) => {
   }
 });
 
+
+router.delete('/jobs/failed', async (_req, res) => {
+  try {
+    await ensureJobsTable();
+
+    const failedIds = Array.from(jobs.values())
+      .filter((job) => job.status === 'failed')
+      .map((job) => job.id);
+
+    for (const id of failedIds) {
+      jobs.delete(id);
+    }
+
+    const result = await query(`
+      DELETE FROM transcode_jobs
+      WHERE status = 'failed'
+      RETURNING id
+    `);
+
+    return res.json({
+      ok: true,
+      removedMemory: failedIds.length,
+      removedDatabase: result.rowCount || 0,
+      removedIds: result.rows.map((row) => row.id),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message || 'Clear failed jobs failed',
+    });
+  }
+});
+
+
 router.get('/jobs/:jobId', (req, res) => {
   const job = jobs.get(req.params.jobId);
 
