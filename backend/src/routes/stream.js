@@ -232,7 +232,27 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
 
   const args = [
     '-y',
-    '-i', url,
+
+    '-hide_banner',
+
+    '-user_agent',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36',
+
+    '-headers',
+    'Referer: https://www.google.com\r\nOrigin: https://www.google.com\r\n',
+
+    '-reconnect',
+    '1',
+
+    '-reconnect_streamed',
+    '1',
+
+    '-reconnect_delay_max',
+    '5',
+
+    '-i',
+    url,
+
     '-c:v', 'libx264',
     '-preset', 'veryfast',
     '-crf', '23',
@@ -247,9 +267,12 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
   ];
 
   const ffmpeg = spawn('ffmpeg', args);
+  let lastFfmpegError = '';
 
   ffmpeg.stderr.on('data', (chunk) => {
     const text = chunk.toString();
+    lastFfmpegError = text.slice(-1000);
+
     if (text.includes('time=')) {
       job.progress = Math.min(99, job.progress + 3);
       saveJob(job).catch(() => null);
@@ -276,7 +299,7 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
       }
     } else {
       job.status = 'failed';
-      job.error = `ffmpeg exited with code ${code}`;
+      job.error = lastFfmpegError || `ffmpeg exited with code ${code}`;
       saveJob(job).catch(() => null);
     }
   });
