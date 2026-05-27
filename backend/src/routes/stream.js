@@ -230,25 +230,30 @@ export function createTranscodeJob({ url, quality = '720p', baseUrl = '', onComp
   jobs.set(jobId, job);
   saveJob(job).catch((error) => console.error('save transcode job failed', error));
 
+  const isRemoteInput = /^https?:\/\//i.test(String(url || ''));
+
+  const inputArgs = isRemoteInput
+    ? [
+        '-headers',
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36\r\nReferer: https://www.google.com\r\nOrigin: https://www.google.com\r\n',
+
+        '-reconnect',
+        '1',
+
+        '-reconnect_streamed',
+        '1',
+
+        '-reconnect_delay_max',
+        '5',
+      ]
+    : [];
+
   const args = [
     '-y',
 
     '-hide_banner',
 
-    '-user_agent',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36',
-
-    '-headers',
-    'Referer: https://www.google.com\r\nOrigin: https://www.google.com\r\n',
-
-    '-reconnect',
-    '1',
-
-    '-reconnect_streamed',
-    '1',
-
-    '-reconnect_delay_max',
-    '5',
+    ...inputArgs,
 
     '-i',
     url,
