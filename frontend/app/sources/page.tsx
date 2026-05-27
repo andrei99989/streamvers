@@ -101,6 +101,25 @@ function getItemType(item: any) {
   return detectType(item.url || '');
 }
 
+
+function getPlayerCapabilities(item: any) {
+  return item.player?.capabilities || [];
+}
+
+function getPlayerScore(item: any) {
+  return item.player?.player_score || 0;
+}
+
+function getRecommendedPlayer(item: any) {
+  return item.player?.recommended_player || 'external';
+}
+
+function playerScoreClass(score: number) {
+  if (score >= 85) return 'bg-[#00E0A8]/20 text-[#00E0A8]';
+  if (score >= 65) return 'bg-yellow-500/20 text-yellow-200';
+  return 'bg-red-500/20 text-red-200';
+}
+
 function getPreviewEmbed(item: any) {
   const url = item.url || item.embedUrl || item.embed_url || '';
 
@@ -586,6 +605,9 @@ export default function SourcesPage() {
             const provider = getItemProvider(item);
             const previewEmbed = getPreviewEmbed(item);
             const thumbnail = getCardThumbnail(item);
+            const playerCapabilities = getPlayerCapabilities(item);
+            const playerScore = getPlayerScore(item);
+            const recommendedPlayer = getRecommendedPlayer(item);
 
             return (
               <div
@@ -644,6 +666,26 @@ export default function SourcesPage() {
                   </p>
 
                   <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase text-white/50">
+                    <span className={`rounded-full px-3 py-1 ${playerScoreClass(playerScore)}`}>
+                      Player {playerScore}%
+                    </span>
+
+                    <span className="rounded-full bg-[#6A4CFF]/20 px-3 py-1 text-[#C7BAFF]">
+                      {recommendedPlayer}
+                    </span>
+
+                    {playerCapabilities.length > 0 ? (
+                      playerCapabilities.map((capability: string) => (
+                        <span key={capability} className="rounded-full bg-white/10 px-3 py-1 text-white/70">
+                          {capability}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="rounded-full bg-red-500/20 px-3 py-1 text-red-200">
+                        External
+                      </span>
+                    )}
+
                     <span className="rounded-full bg-white/10 px-3 py-1">
                       {item.quality || 'auto'}
                     </span>
