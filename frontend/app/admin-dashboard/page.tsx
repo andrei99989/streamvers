@@ -11,6 +11,7 @@ export default function AdminDashboardPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [sourceHealth, setSourceHealth] = useState<any>(null);
+  const [betaHealth, setBetaHealth] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeMessage, setOptimizeMessage] = useState('');
@@ -18,12 +19,13 @@ export default function AdminDashboardPage() {
   async function loadDashboard() {
     setLoading(true);
 
-    const [healthData, statsData, jobsData, logsData, sourceHealthData] = await Promise.all([
+    const [healthData, statsData, jobsData, logsData, sourceHealthData, betaHealthData] = await Promise.all([
       apiFetch('/health').catch(() => null),
       apiFetch('/stats/admin').catch(() => null),
       apiFetch('/stream/jobs').catch(() => ({ items: [] })),
       apiFetch('/sources/optimization-logs').catch(() => ({ items: [] })),
       apiFetch('/sources/health').catch(() => null),
+      apiFetch('/health/beta').catch(() => null),
     ]);
 
     setHealth(healthData);
@@ -31,6 +33,7 @@ export default function AdminDashboardPage() {
     setJobs(jobsData.items || []);
     setLogs(logsData.items || []);
     setSourceHealth(sourceHealthData);
+    setBetaHealth(betaHealthData);
     setLoading(false);
   }
 
@@ -67,8 +70,16 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
       <section className="mb-8 rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-[#6A4CFF]/35 to-[#00E0A8]/15 p-8">
-        <div className="mb-3 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-black">
-          ADMIN CONTROL CENTER
+        <div className="mb-3 flex flex-wrap gap-3">
+          <div className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-black">
+            ADMIN CONTROL CENTER
+          </div>
+
+          {betaHealth?.readiness?.status && (
+            <div className="inline-flex rounded-full bg-[#00E0A8] px-4 py-2 text-sm font-black text-black">
+              {betaHealth.milestone} · {betaHealth.readiness.percent}% · {betaHealth.readiness.status}
+            </div>
+          )}
         </div>
 
         <h1 className="flex items-center gap-3 text-4xl font-black md:text-6xl">
