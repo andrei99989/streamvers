@@ -129,6 +129,65 @@ export default function AdminPage() {
         </section>
       )}
 
+
+      {sourceHealth?.quality && (
+        <section className="glass mt-8 rounded-[2rem] p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-2xl font-black">Source Quality</h2>
+
+            <div className="rounded-2xl bg-[#00E0A8]/20 px-4 py-2 text-sm font-black text-[#00E0A8]">
+              {sourceHealth?.quality?.avg_score || 0}% avg
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl bg-black/30 p-5">
+              <div className="text-sm uppercase text-white/40">Excellent</div>
+              <div className="mt-2 text-4xl font-black">
+                {sourceHealth?.quality?.excellent || 0}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-black/30 p-5">
+              <div className="text-sm uppercase text-white/40">Needs Fix</div>
+              <div className="mt-2 text-4xl font-black">
+                {sourceHealth?.quality?.needs_fix || 0}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-black/30 p-5">
+              <div className="text-sm uppercase text-white/40">Missing Posters</div>
+              <div className="mt-2 text-4xl font-black">
+                {sourceHealth?.summary?.missing_poster || 0}
+              </div>
+            </div>
+          </div>
+
+          {(sourceHealth?.worstSources || []).length > 0 && (
+            <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {sourceHealth.worstSources.slice(0, 4).map((item: any) => (
+                <div key={item.id} className="rounded-2xl bg-black/30 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="font-black">
+                      #{item.id}
+                    </div>
+
+                    <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-black">
+                      {item.quality_score}%
+                    </div>
+                  </div>
+
+                  <div className="mt-2 text-sm text-white/50">
+                    {item.provider} · {item.type}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+
       {stats?.providers?.length > 0 && (
         <section className="glass mt-8 rounded-[2rem] p-6">
           <h2 className="mb-5 text-2xl font-black">Source Providers</h2>
