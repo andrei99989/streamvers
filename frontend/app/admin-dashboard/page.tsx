@@ -3,7 +3,7 @@
 import { apiFetch } from '../../lib/apiClient';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Activity, Database, Gauge, RefreshCw, Settings, Video } from 'lucide-react';
+import { Activity, Database, Gauge, MemoryStick, RefreshCw, Server, Settings, Video } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   const [health, setHealth] = useState<any>(null);
@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
 
     const [healthData, statsData, jobsData, logsData] = await Promise.all([
       apiFetch('/health').catch(() => null),
-      apiFetch('/stats').catch(() => null),
+      apiFetch('/stats/admin').catch(() => null),
       apiFetch('/stream/jobs').catch(() => ({ items: [] })),
       apiFetch('/sources/optimization-logs').catch(() => ({ items: [] })),
     ]);
@@ -56,7 +56,7 @@ export default function AdminDashboardPage() {
         </button>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5">
           <Activity className="text-[#00E0A8]" />
           <div className="mt-3 text-sm font-black uppercase text-white/40">API</div>
@@ -68,6 +68,20 @@ export default function AdminDashboardPage() {
           <div className="mt-3 text-sm font-black uppercase text-white/40">Smart Engine</div>
           <div className="mt-1 text-3xl font-black">{health?.smartEngine?.enabled ? 'Active' : 'Checking'}</div>
           <div className="mt-1 text-xs text-white/40">Every {health?.smartEngine?.intervalMinutes || 30} min</div>
+        </div>
+
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5">
+          <Server className="text-[#B8A7FF]" />
+          <div className="mt-3 text-sm font-black uppercase text-white/40">Uptime</div>
+          <div className="mt-1 text-3xl font-black">{stats?.uptime?.human || '0h 0m'}</div>
+          <div className="mt-1 text-xs text-white/40">{stats?.uptime?.seconds || 0}s</div>
+        </div>
+
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5">
+          <MemoryStick className="text-[#B8A7FF]" />
+          <div className="mt-3 text-sm font-black uppercase text-white/40">Memory</div>
+          <div className="mt-1 text-3xl font-black">{stats?.memory?.rssMb || 0} MB</div>
+          <div className="mt-1 text-xs text-white/40">Heap {stats?.memory?.heapUsedMb || 0}/{stats?.memory?.heapTotalMb || 0} MB</div>
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5">
