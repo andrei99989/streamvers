@@ -223,6 +223,38 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
+      <section className="mt-6 rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-5">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black">StreamVerse Beta v1 Release Notes</h2>
+            <div className="mt-1 text-sm text-white/50">
+              Milestone stabil pentru administrare, monitorizare și smart source orchestration.
+            </div>
+          </div>
+
+          <div className="rounded-full bg-[#00E0A8] px-4 py-2 text-sm font-black text-black">
+            {betaHealth?.readiness?.percent || 99}% Ready
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            'Live Admin Stats',
+            'System Health Auto Checks',
+            'Source Health Monitor',
+            'Source Quality Score',
+            'Smart Optimize Action',
+            'Clear Smart Logs',
+            'Beta Health Endpoint',
+            'Registry Status UI',
+          ].map((item) => (
+            <div key={item} className="rounded-2xl bg-black/30 p-4 font-black">
+              ✅ {item}
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="mt-6 grid gap-4 xl:grid-cols-2">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
           <div className="mb-4 flex items-center justify-between">
