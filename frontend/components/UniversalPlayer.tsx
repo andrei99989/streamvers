@@ -188,6 +188,7 @@ export default function UniversalPlayer({
   const [nativeFailed, setNativeFailed] = useState(false);
   const [transcoding, setTranscoding] = useState(false);
   const [transcodeJob, setTranscodeJob] = useState<any>(null);
+  const [transcodeProgress, setTranscodeProgress] = useState(0);
   const [resolvedStream, setResolvedStream] = useState<any>(null);
   const [resolving, setResolving] = useState(false);
 
@@ -214,6 +215,7 @@ export default function UniversalPlayer({
     setDuration(0);
     setNativeFailed(false);
     setTranscodeJob(null);
+    setTranscodeProgress(0);
     setResolvedStream(null);
     lastSaveRef.current = 0;
 
@@ -299,6 +301,35 @@ export default function UniversalPlayer({
       setTranscoding(false);
     }
   }
+
+
+  useEffect(() => {
+    if (!transcodeJob?.id || transcodeJob?.status === 'completed' || transcodeJob?.status === 'failed') return;
+
+    const timer = window.setInterval(async () => {
+      try {
+        const res = await fetch(`${API}/stream/jobs/${transcodeJob.id}`);
+        const job = await res.json();
+
+        setTranscodeJob(job);
+        setTranscodeProgress(Number(job.progress || 0));
+
+        if (job.status === 'completed') {
+          setError('✅ HLS stream generat. Poți deschide redarea compatibilă.');
+          window.clearInterval(timer);
+        }
+
+        if (job.status === 'failed') {
+          setError(`❌ Auto Transcode failed: ${job.error || 'unknown error'}`);
+          window.clearInterval(timer);
+        }
+      } catch {
+        window.clearInterval(timer);
+      }
+    }, 2500);
+
+    return () => window.clearInterval(timer);
+  }, [transcodeJob?.id, transcodeJob?.status]);
 
   function skip(seconds: number) {
     if (!videoRef.current) return;
@@ -663,22 +694,43 @@ export default function UniversalPlayer({
               </div>
             </div>
 
-            {transcodeJob?.hlsUrl && (
+            {transcodeJob && (
               <div className="mt-5 rounded-2xl border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-4">
-                <div className="text-sm font-black text-[#00E0A8]">
-                  HLS stream generat cu succes
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm font-black text-[#00E0A8]">
+                    HLS Transcode: {transcodeJob.status || 'running'}
+                  </div>
+
+                  <div className="rounded-full bg-black/40 px-3 py-1 text-xs font-black text-white/70">
+                    {transcodeProgress || transcodeJob.progress || 0}%
+                  </div>
                 </div>
 
-                <div className="mt-1 break-all text-xs text-white/50">
-                  {transcodeJob.hlsUrl}
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/40">
+                  <div
+                    className="h-full rounded-full bg-[#00E0A8]"
+                    style={{ width: `${Math.min(100, transcodeProgress || transcodeJob.progress || 0)}%` }}
+                  />
                 </div>
 
-                <a
-                  href={`/player?url=${encodeURIComponent(transcodeJob.hlsUrl)}`}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black"
-                >
-                  ▶ Deschide HLS Stream
-                </a>
+                {transcodeJob?.hlsUrl && (
+                  <>
+                    <div className="mt-4 text-sm font-black text-[#00E0A8]">
+                      HLS stream generat cu succes
+                    </div>
+
+                    <div className="mt-1 break-all text-xs text-white/50">
+                      {transcodeJob.hlsUrl}
+                    </div>
+
+                    <a
+                      href={`/player?url=${encodeURIComponent(transcodeJob.hlsUrl)}`}
+                      className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black"
+                    >
+                      ▶ Deschide HLS Stream
+                    </a>
+                  </>
+                )}
               </div>
             )}
 
