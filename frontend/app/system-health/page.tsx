@@ -66,6 +66,7 @@ function statusText(item: any) {
 
 
 const checks = [
+  ['Beta Health', '/health/beta'],
   ['Health', '/health'],
   ['Neon Sources', '/db/sources'],
   ['Neon Contents', '/db/contents'],
@@ -261,6 +262,30 @@ export default function SystemHealthPage() {
         </p>
       </section>
 
+
+      {results.find((x) => x.name === 'Beta Health')?.preview?.readiness && (
+        <section className="mb-6 rounded-3xl border border-[#00E0A8]/30 bg-[#00E0A8]/10 p-5">
+          <div className="text-xs font-black uppercase text-[#00E0A8]">
+            StreamVerse Milestone
+          </div>
+
+          <div className="mt-2 text-3xl font-black">
+            {results.find((x) => x.name === 'Beta Health')?.preview?.milestone}
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2 text-sm font-black">
+            <span className="rounded-full bg-[#00E0A8] px-4 py-2 text-black">
+              {results.find((x) => x.name === 'Beta Health')?.preview?.readiness?.percent}% Ready
+            </span>
+            <span className="rounded-full bg-white/10 px-4 py-2">
+              {results.find((x) => x.name === 'Beta Health')?.preview?.readiness?.status}
+            </span>
+            <span className="rounded-full bg-white/10 px-4 py-2">
+              Quality {results.find((x) => x.name === 'Beta Health')?.preview?.quality?.avg_score || 0}%
+            </span>
+          </div>
+        </section>
+      )}
 
       <section className="mb-6 grid gap-3 md:grid-cols-4">
         {[
