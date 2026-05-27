@@ -101,6 +101,57 @@ async function ensureColumns() {
   await query(`CREATE INDEX IF NOT EXISTS idx_sources_canonical_url ON sources(canonical_url)`);
 }
 
+
+router.get('/health', async (_req, res) => {
+  try {
+    await ensureColumns();
+
+    const summary = await query(`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE status IS NULL OR status = 'active')::int AS active,
+        COUNT(*) FILTER (WHERE status IS NOT NULL AND status <> 'active')::int AS inactive,
+        COUNT(*) FILTER (WHERE poster IS NULL OR poster = '')::int AS missing_poster,
+        COUNT(*) FILTER (WHERE source_type = 'external')::int AS external,
+        COUNT(*) FILTER (WHERE source_type IN ('mp4', 'webm', 'hls', 'iframe'))::int AS streamable
+      FROM sources
+    `);
+
+    const byProvider = await query(`
+      SELECT COALESCE(provider, source_type, 'unknown') AS provider, COUNT(*)::int AS total
+      FROM sources
+      GROUP BY COALESCE(provider, source_type, 'unknown')
+      ORDER BY total DESC
+    `);
+
+    const byType = await query(`
+      SELECT COALESCE(source_type, 'unknown') AS type, COUNT(*)::int AS total
+      FROM sources
+      GROUP BY COALESCE(source_type, 'unknown')
+      ORDER BY total DESC
+    `);
+
+    res.json({
+      ok: true,
+      summary: summary.rows[0] || {
+        total: 0,
+        active: 0,
+        inactive: 0,
+        missing_poster: 0,
+        external: 0,
+        streamable: 0,
+      },
+      byProvider: byProvider.rows,
+      byType: byType.rows,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('GET /sources/health failed', error);
+    res.status(500).json({ ok: false, error: error.message || 'Source health failed' });
+  }
+});
+
+
 router.get('/', async (req, res) => {
   try {
     await ensureColumns();
