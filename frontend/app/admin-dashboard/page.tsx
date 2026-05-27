@@ -11,6 +11,7 @@ export default function AdminDashboardPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [sourceHealth, setSourceHealth] = useState<any>(null);
+  const [sources, setSources] = useState<any[]>([]);
   const [betaHealth, setBetaHealth] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
@@ -19,13 +20,14 @@ export default function AdminDashboardPage() {
   async function loadDashboard() {
     setLoading(true);
 
-    const [healthData, statsData, jobsData, logsData, sourceHealthData, betaHealthData] = await Promise.all([
+    const [healthData, statsData, jobsData, logsData, sourceHealthData, betaHealthData, sourcesData] = await Promise.all([
       apiFetch('/health').catch(() => null),
       apiFetch('/stats/admin').catch(() => null),
       apiFetch('/stream/jobs').catch(() => ({ items: [] })),
       apiFetch('/sources/optimization-logs').catch(() => ({ items: [] })),
       apiFetch('/sources/health').catch(() => null),
       apiFetch('/health/beta').catch(() => null),
+      apiFetch('/sources?limit=100').catch(() => ({ items: [] })),
     ]);
 
     setHealth(healthData);
@@ -34,6 +36,7 @@ export default function AdminDashboardPage() {
     setLogs(logsData.items || []);
     setSourceHealth(sourceHealthData);
     setBetaHealth(betaHealthData);
+    setSources(sourcesData.items || []);
     setLoading(false);
   }
 
@@ -66,6 +69,38 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+
+  const playerSummary = sources.reduce(
+    (acc: any, item: any) => {
+      const player = item.player || {};
+      const recommended = player.recommended_player || 'external';
+      const score = Number(player.player_score || 0);
+
+      acc.total += 1;
+      acc.scoreTotal += score;
+      acc[recommended] = (acc[recommended] || 0) + 1;
+
+      if ((player.capabilities || []).includes('HLS')) acc.hls += 1;
+      if ((player.capabilities || []).includes('MP4')) acc.mp4 += 1;
+      if ((player.capabilities || []).includes('EMBED')) acc.embed += 1;
+
+      return acc;
+    },
+    {
+      total: 0,
+      scoreTotal: 0,
+      native: 0,
+      embed: 0,
+      hls: 0,
+      external: 0,
+      mp4: 0,
+    }
+  );
+
+  const avgPlayerScore = playerSummary.total
+    ? Math.round(playerSummary.scoreTotal / playerSummary.total)
+    : 0;
 
   return (
     <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10 md:pb-20">
@@ -218,6 +253,36 @@ export default function AdminDashboardPage() {
             <div key={provider.provider} className="rounded-2xl bg-black/30 p-4">
               <div className="font-black uppercase">{provider.provider}</div>
               <div className="mt-2 text-sm text-white/50">{provider.total} sources</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-[2rem] border border-[#6A4CFF]/20 bg-[#6A4CFF]/10 p-5">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black">Player Intelligence v1.1</h2>
+            <div className="mt-1 text-sm text-white/50">
+              Detectare automată pentru native video, embed, HLS și external fallback.
+            </div>
+          </div>
+
+          <div className="rounded-full bg-[#6A4CFF] px-4 py-2 text-sm font-black">
+            Avg Player Score {avgPlayerScore}%
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {[
+            ['Native', playerSummary.native || 0],
+            ['Embed', playerSummary.embed || 0],
+            ['HLS', playerSummary.hls || 0],
+            ['MP4', playerSummary.mp4 || 0],
+            ['External', playerSummary.external || 0],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl bg-black/30 p-4">
+              <div className="text-xs font-black uppercase text-white/40">{label}</div>
+              <div className="mt-2 text-3xl font-black">{value}</div>
             </div>
           ))}
         </div>
