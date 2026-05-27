@@ -713,7 +713,7 @@ export default function UniversalPlayer({
                   />
                 </div>
 
-                {transcodeJob?.hlsUrl && (
+                {transcodeJob?.status === 'completed' && transcodeJob?.hlsUrl && (
                   <>
                     <div className="mt-4 text-sm font-black text-[#00E0A8]">
                       HLS stream generat cu succes
