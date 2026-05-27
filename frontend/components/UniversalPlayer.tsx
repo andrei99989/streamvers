@@ -185,6 +185,9 @@ export default function UniversalPlayer({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resumeTime, setResumeTime] = useState(0);
+  const [nativeFailed, setNativeFailed] = useState(false);
+  const [transcoding, setTranscoding] = useState(false);
+  const [transcodeJob, setTranscodeJob] = useState<any>(null);
 
   const finalType = useMemo(
     () => resolveRuntimePlayer(source),
@@ -207,6 +210,8 @@ export default function UniversalPlayer({
     setError('');
     setProgress(0);
     setDuration(0);
+    setNativeFailed(false);
+    setTranscodeJob(null);
     lastSaveRef.current = 0;
 
     const key = `streamverse-progress:${source.sourceId || source.url}`;
@@ -237,6 +242,30 @@ export default function UniversalPlayer({
 
     setError('Browserul nu suportă HLS.');
   }, [source, finalType]);
+
+
+  async function startAutoTranscode() {
+    if (!source?.url || transcoding) return;
+
+    try {
+      setTranscoding(true);
+      setError('⏳ Auto Transcode pornit...');
+
+      const res = await fetch(`${API}/stream/transcode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: source.url, quality: '720p' }),
+      });
+
+      const job = await res.json();
+      setTranscodeJob(job);
+      setError(`✅ Transcode job creat: ${job.id || 'running'}`);
+    } catch {
+      setError('❌ Auto Transcode nu a putut porni.');
+    } finally {
+      setTranscoding(false);
+    }
+  }
 
   function skip(seconds: number) {
     if (!videoRef.current) return;
@@ -430,7 +459,10 @@ export default function UniversalPlayer({
           playsInline
           preload="metadata"
           poster={source.poster || undefined}
-          onError={() => setError('Videoclipul nu poate fi redat.')}
+          onError={() => {
+            setNativeFailed(true);
+            setError('Videoclipul nu poate fi redat în browser. Încearcă Open External sau Auto Transcode.');
+          }}
           onLoadedMetadata={(e) => {
             const video = e.currentTarget;
 
@@ -558,8 +590,68 @@ export default function UniversalPlayer({
         </div>
 
         {error && (
-          <div className="absolute left-4 right-4 top-14 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-100">
+          <div className="absolute left-4 right-4 top-14 z-50 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-100 backdrop-blur-xl">
             {error}
+          </div>
+        )}
+
+        {nativeFailed && (
+          <div className="absolute inset-x-4 top-28 z-50 overflow-hidden rounded-[2rem] border border-white/10 bg-black/85 p-5 shadow-[0_0_80px_rgba(106,76,255,0.35)] backdrop-blur-xl">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-2xl font-black text-white">
+                  Smart Player Fallback
+                </div>
+
+                <div className="mt-2 text-sm text-white/50">
+                  Browserul nu poate reda această sursă nativ.
+                  StreamVerse poate deschide sursa externă sau genera automat un flux HLS compatibil.
+                </div>
+              </div>
+
+              <div className="rounded-full bg-[#6A4CFF]/20 px-4 py-2 text-xs font-black uppercase text-[#B8A7FF]">
+                AI Recovery Active
+              </div>
+            </div>
+
+            {transcodeJob?.hlsUrl && (
+              <div className="mt-5 rounded-2xl border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-4">
+                <div className="text-sm font-black text-[#00E0A8]">
+                  HLS stream generat cu succes
+                </div>
+
+                <div className="mt-1 break-all text-xs text-white/50">
+                  {transcodeJob.hlsUrl}
+                </div>
+
+                <a
+                  href={`/player?url=${encodeURIComponent(transcodeJob.hlsUrl)}`}
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-[#00E0A8] px-5 py-3 font-black text-black"
+                >
+                  ▶ Deschide HLS Stream
+                </a>
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-black"
+              >
+                <ExternalLink size={16} />
+                Open External Source
+              </a>
+
+              <button
+                onClick={startAutoTranscode}
+                disabled={transcoding}
+                className="rounded-2xl bg-[#6A4CFF] px-5 py-3 font-black text-white disabled:opacity-50"
+              >
+                {transcoding ? 'Transcoding...' : 'Auto Transcode'}
+              </button>
+            </div>
           </div>
         )}
       </div>
