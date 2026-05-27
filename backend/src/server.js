@@ -42,6 +42,7 @@ import statsRoutes from './routes/stats.js';
 import discoveryRoutes from './routes/discovery.js';
 import recommendationsRoutes from './routes/recommendations.js';
 import sourcesRoutes from './routes/sources.js';
+import stremioAddonRoutes from './routes/stremioAddon.js';
 import searchRecentRoutes from './routes/searchRecent.js';
 
 const app = express();
@@ -143,6 +144,7 @@ app.use('/trending', trendingRoutes);
 app.use('/discovery', discoveryRoutes);
 app.use('/recommendations', recommendationsRoutes);
 app.use('/sources', sourcesRoutes);
+app.use('/stremio-addon', stremioAddonRoutes);
 
 const port = process.env.PORT || 4000;
 

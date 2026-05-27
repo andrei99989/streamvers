@@ -288,6 +288,42 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
+      <section className="mt-6 rounded-[2rem] border border-[#6A4CFF]/20 bg-[#6A4CFF]/10 p-5">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black">Stremio Addon Protocol v1</h2>
+            <div className="mt-1 text-sm text-white/50">
+              Manifest, catalogs, metadata, streams și subtitles compatibile Stremio-like.
+            </div>
+          </div>
+
+          <div className="rounded-full bg-[#00E0A8] px-4 py-2 text-sm font-black text-black">
+            80% Ready
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {[
+            ['Manifest', '/stremio-addon/manifest.json'],
+            ['Movies Catalog', '/stremio-addon/catalog/movie/streamverse-movies.json'],
+            ['Sources Catalog', '/stremio-addon/catalog/channel/streamverse-sources.json'],
+            ['Sample Meta', '/stremio-addon/meta/movie/streamverse:19.json'],
+            ['Sample Stream', '/stremio-addon/stream/movie/streamverse:19.json'],
+          ].map(([label, path]) => (
+            <a
+              key={path}
+              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}${path}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-2xl bg-black/30 p-4 transition hover:bg-black/50"
+            >
+              <div className="text-xs font-black uppercase text-white/40">{label}</div>
+              <div className="mt-2 break-all text-sm font-bold text-[#B8A7FF]">{path}</div>
+            </a>
+          ))}
+        </div>
+      </section>
+
       <section className="mt-6 rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-5">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
