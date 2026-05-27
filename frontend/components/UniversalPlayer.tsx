@@ -188,6 +188,8 @@ export default function UniversalPlayer({
   const [nativeFailed, setNativeFailed] = useState(false);
   const [transcoding, setTranscoding] = useState(false);
   const [transcodeJob, setTranscodeJob] = useState<any>(null);
+  const [resolvedStream, setResolvedStream] = useState<any>(null);
+  const [resolving, setResolving] = useState(false);
 
   const finalType = useMemo(
     () => resolveRuntimePlayer(source),
@@ -212,6 +214,7 @@ export default function UniversalPlayer({
     setDuration(0);
     setNativeFailed(false);
     setTranscodeJob(null);
+    setResolvedStream(null);
     lastSaveRef.current = 0;
 
     const key = `streamverse-progress:${source.sourceId || source.url}`;
@@ -243,6 +246,36 @@ export default function UniversalPlayer({
     setError('Browserul nu suportă HLS.');
   }, [source, finalType]);
 
+
+
+  async function resolveStreamUrl() {
+    if (!source?.url || resolving) return null;
+
+    try {
+      setResolving(true);
+
+      const res = await fetch(`${API}/stream/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: source.url }),
+      });
+
+      const data = await res.json();
+      setResolvedStream(data);
+
+      if (data?.protectedShare || data?.recommendedAction === 'open_external_or_transcode') {
+        setNativeFailed(true);
+        setError('Protected Share detectat. StreamVerse poate deschide sursa externă sau porni Auto Transcode.');
+      }
+
+      return data;
+    } catch {
+      setResolvedStream(null);
+      return null;
+    } finally {
+      setResolving(false);
+    }
+  }
 
   async function startAutoTranscode() {
     if (!source?.url || transcoding) return;
@@ -378,6 +411,21 @@ export default function UniversalPlayer({
       console.error('Continue autosave failed:', error);
     }
   }
+
+
+  useEffect(() => {
+    const url = String(source?.url || '').toLowerCase();
+    const isProtected =
+      provider === 'terabox' ||
+      provider === 'google-drive' ||
+      url.includes('terabox.com') ||
+      url.includes('1024tera.com') ||
+      url.includes('drive.google.com');
+
+    if (isProtected) {
+      resolveStreamUrl();
+    }
+  }, [source?.url, provider]);
 
   useEffect(() => {
     if (!['mp4', 'webm', 'hls'].includes(String(finalType))) {
@@ -604,13 +652,14 @@ export default function UniversalPlayer({
                 </div>
 
                 <div className="mt-2 text-sm text-white/50">
-                  Browserul nu poate reda această sursă nativ.
-                  StreamVerse poate deschide sursa externă sau genera automat un flux HLS compatibil.
+                  {resolvedStream?.protectedShare
+                    ? 'Această sursă este Protected Share și nu permite iframe direct. StreamVerse poate deschide sursa externă sau porni Auto Transcode.'
+                    : 'Browserul nu poate reda această sursă nativ. StreamVerse poate deschide sursa externă sau genera automat un flux HLS compatibil.'}
                 </div>
               </div>
 
               <div className="rounded-full bg-[#6A4CFF]/20 px-4 py-2 text-xs font-black uppercase text-[#B8A7FF]">
-                AI Recovery Active
+                {resolving ? 'Resolving...' : resolvedStream?.protectedShare ? 'Protected Share' : 'AI Recovery Active'}
               </div>
             </div>
 
