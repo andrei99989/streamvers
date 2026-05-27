@@ -47,6 +47,71 @@ function normalizeSourceType(_provider, type) {
   return 'external';
 }
 
+
+function buildPlayerIntelligence(source = {}) {
+  const url = String(source.url || '').toLowerCase();
+  const type = String(source.source_type || source.type || detectType(url)).toLowerCase();
+  const provider = String(source.provider || detectProvider(url)).toLowerCase();
+
+  const flags = [];
+  const capabilities = [];
+
+  if (type === 'hls' || url.includes('.m3u8')) {
+    capabilities.push('HLS');
+    flags.push('adaptive-stream');
+  }
+
+  if (type === 'mp4' || url.split('?')[0].endsWith('.mp4')) {
+    capabilities.push('MP4');
+    flags.push('direct-video');
+  }
+
+  if (type === 'webm' || url.split('?')[0].endsWith('.webm')) {
+    capabilities.push('WEBM');
+    flags.push('direct-video');
+  }
+
+  if (type === 'iframe' || ['youtube', 'vimeo', 'dailymotion', 'tiktok', 'rumble', 'terabox'].includes(provider)) {
+    capabilities.push('EMBED');
+    flags.push('iframe-player');
+  }
+
+  if (url.includes('/shorts/') || provider === 'tiktok') {
+    capabilities.push('SHORTS');
+    flags.push('short-form');
+  }
+
+  if (url.includes('/live') || url.includes('livestream') || url.includes('m3u8')) {
+    capabilities.push('LIVE');
+  }
+
+  const isStreamable = ['mp4', 'webm', 'hls', 'iframe'].includes(type) || capabilities.includes('EMBED');
+  const supportsSubtitles = ['mp4', 'webm', 'hls'].includes(type);
+
+  let score = 50;
+  if (isStreamable) score += 25;
+  if (supportsSubtitles) score += 10;
+  if (capabilities.includes('HLS')) score += 10;
+  if (capabilities.includes('EMBED')) score += 5;
+  if (type === 'external') score -= 20;
+
+  score = Math.max(0, Math.min(100, score));
+
+  return {
+    capabilities: [...new Set(capabilities)],
+    is_streamable: isStreamable,
+    supports_subtitles: supportsSubtitles,
+    player_score: score,
+    player_flags: [...new Set(flags)],
+    recommended_player:
+      type === 'hls' ? 'hls' :
+      ['mp4', 'webm'].includes(type) ? 'native' :
+      capabilities.includes('EMBED') ? 'embed' :
+      'external',
+  };
+}
+
+
 function normalizeText(value = '') {
   return String(value)
     .toLowerCase()
@@ -235,7 +300,12 @@ router.get('/', async (req, res) => {
       [limit]
     );
 
-    res.json({ items: result.rows });
+    const items = result.rows.map((item) => ({
+      ...item,
+      player: buildPlayerIntelligence(item),
+    }));
+
+    res.json({ items });
   } catch (error) {
     console.error(error);
     res.json({ items: fallbackSources, fallback: true });
