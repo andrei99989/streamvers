@@ -3,6 +3,75 @@ import { query } from '../db/postgres.js';
 
 const router = Router();
 
+const OPENSUBTITLES_API = 'https://api.opensubtitles.com/api/v1';
+
+function openSubtitlesHeaders() {
+  if (!process.env.OPENSUBTITLES_API_KEY) return null;
+
+  return {
+    'Api-Key': process.env.OPENSUBTITLES_API_KEY,
+    'Content-Type': 'application/json',
+    'User-Agent': 'StreamVerse v1',
+  };
+}
+
+async function getContentTitleByAddonId(addonId = '') {
+  const result = await query(
+    `
+    SELECT title
+    FROM contents
+    WHERE deleted_at IS NULL
+      AND (
+        ('streamverse:' || id::text) = $1
+        OR content_key = $1
+        OR metadata->>'imdbId' = $1
+        OR metadata->>'imdb_id' = $1
+        OR ('tmdb:' || COALESCE(metadata->>'tmdbId', metadata->>'tmdb_id', metadata->>'id')) = $1
+      )
+    LIMIT 1
+    `,
+    [addonId]
+  );
+
+  return result.rows[0]?.title || addonId.replace('streamverse:', '');
+}
+
+
+function normalizeSubtitleText(value = '') {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function subtitleMatchesTitle(subtitle = {}, title = '') {
+  const target = normalizeSubtitleText(title);
+  const name = normalizeSubtitleText(subtitle.name || '');
+  const url = normalizeSubtitleText(subtitle.url || '');
+
+  if (!target) return true;
+  if (name === target) return true;
+  if (name.includes(`${target} 2008`)) return true;
+  if (name.includes(`batman ${target}`)) return true;
+  if (url.includes(target.replaceAll(' ', '-'))) return true;
+
+  return false;
+}
+
+function mapOpenSubtitles(item = {}) {
+  const attr = item.attributes || {};
+  const files = attr.files || [];
+  const firstFile = files[0] || {};
+
+  return {
+    id: String(item.id || firstFile.file_id || ''),
+    lang: attr.language || 'en',
+    url: attr.url || attr.download_url || '',
+    name: attr.release || attr.feature_details?.title || 'OpenSubtitles',
+  };
+}
+
+
 const manifest = {
   id: 'com.streamverse.local',
   version: '1.0.0',
@@ -215,8 +284,45 @@ router.get(['/stream/:type/:id.json', '/stream/:type/:id'], async (req, res) => 
   }
 });
 
-router.get(['/subtitles/:type/:id.json', '/subtitles/:type/:id'], async (_req, res) => {
-  res.json({ subtitles: [] });
+router.get(['/subtitles/:type/:id.json', '/subtitles/:type/:id'], async (req, res) => {
+  try {
+    const headers = openSubtitlesHeaders();
+
+    if (!headers) {
+      return res.json({
+        subtitles: [],
+        warning: 'OPENSUBTITLES_API_KEY missing',
+      });
+    }
+
+    const id = String(req.params.id || '');
+    const title = await getContentTitleByAddonId(id);
+    const languages = String(req.query.languages || 'ro,en');
+
+    const url = `${OPENSUBTITLES_API}/subtitles?query=${encodeURIComponent(title)}&languages=${encodeURIComponent(languages)}`;
+    const response = await fetch(url, { headers });
+    const data = await response.json().catch(() => ({ data: [] }));
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        subtitles: [],
+        error: data?.message || 'OpenSubtitles error',
+      });
+    }
+
+    const subtitles = (data.data || [])
+      .map(mapOpenSubtitles)
+      .filter((item) => item.id && item.lang)
+      .filter((item) => subtitleMatchesTitle(item, title))
+      .slice(0, 20);
+
+    return res.json({ subtitles });
+  } catch (error) {
+    return res.status(500).json({
+      subtitles: [],
+      error: error.message || 'Subtitles failed',
+    });
+  }
 });
 
 export default router;
