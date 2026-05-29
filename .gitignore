@@ -33,3 +33,5 @@ stats_insert.py
 
 frontend@1.0.0
 next
+backend/storage/
+backend/backend/
