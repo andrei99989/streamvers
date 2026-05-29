@@ -2,17 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiDelete, apiFetch, apiPatch, apiPost } from '../../lib/apiClient';
-import {
-  Activity,
-  Boxes,
-  Download,
-  Eye,
-  FileJson,
-  Power,
-  RefreshCcw,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { Activity, Boxes, Download, Eye, Power, RefreshCcw, Trash2 } from 'lucide-react';
 
 export default function AddonsPage() {
   const [addons, setAddons] = useState<any[]>([]);
@@ -28,7 +18,7 @@ export default function AddonsPage() {
   const [metaView, setMetaView] = useState<any>(null);
 
   const [testType, setTestType] = useState('movie');
-  const [testMetaId, setTestMetaId] = useState('tt0468569');
+  const [testMetaId, setTestMetaId] = useState('streamverse:19');
 
   function showMessage(text: string) {
     setMessage(text);
@@ -157,9 +147,9 @@ export default function AddonsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black p-6 pb-56 text-white md:p-10">
+    <main className="min-h-screen overflow-x-hidden bg-black p-4 pb-56 text-white md:p-10">
       {message && (
-        <div className="fixed left-1/2 top-6 z-[9999] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 px-6 py-4 font-black shadow-2xl backdrop-blur-xl">
+        <div className="fixed left-1/2 top-6 z-[9999] max-w-[90vw] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 px-6 py-4 font-black shadow-2xl backdrop-blur-xl">
           {message}
         </div>
       )}
@@ -170,7 +160,7 @@ export default function AddonsPage() {
         </div>
 
         <div>
-          <h1 className="text-5xl font-black">Addons</h1>
+          <h1 className="text-4xl font-black md:text-5xl">Addons</h1>
           <p className="mt-2 text-white/60">
             Install, test and browse Stremio-like addon manifests.
           </p>
@@ -179,7 +169,9 @@ export default function AddonsPage() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-          <h2 className="mb-5 text-2xl font-black">Create Addon</h2>
+          <h2 className="mb-5 text-2xl font-black">
+            Create Addon
+          </h2>
 
           <div className="space-y-4">
             <input
@@ -206,7 +198,9 @@ export default function AddonsPage() {
         </div>
 
         <div className="rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-6">
-          <h2 className="mb-5 text-2xl font-black">Install Manifest</h2>
+          <h2 className="mb-5 text-2xl font-black">
+            Install Manifest
+          </h2>
 
           <div className="space-y-4">
             <input
@@ -230,9 +224,14 @@ export default function AddonsPage() {
       <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/5 p-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-black">Installed Addons</h2>
+            <h2 className="text-3xl font-black">
+              Installed Addons
+            </h2>
+
             <p className="mt-2 text-white/60">
-              {loading ? 'Loading...' : `${addons.length} addons installed`}
+              {loading
+                ? 'Loading...'
+                : `${addons.length} addons installed`}
             </p>
           </div>
 
@@ -252,12 +251,14 @@ export default function AddonsPage() {
             return (
               <div
                 key={addon.id}
-                className="rounded-[1.5rem] border border-white/10 bg-black/30 p-5"
+                className="rounded-[1.5rem] border border-white/10 bg-black/30 p-4 md:p-5"
               >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-2xl font-black">{addon.name}</h3>
+                      <h3 className="break-words text-xl font-black md:text-2xl">
+                        {addon.name}
+                      </h3>
 
                       <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase text-white/60">
                         {addon.version || 'v?'}
@@ -274,7 +275,7 @@ export default function AddonsPage() {
                       </span>
                     </div>
 
-                    <div className="mt-2 break-all text-sm text-white/50">
+                    <div className="mt-2 break-all text-xs text-white/50 md:text-sm">
                       {addon.url || 'No manifest URL'}
                     </div>
 
@@ -293,10 +294,10 @@ export default function AddonsPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     <button
                       onClick={() => loadCatalogs(addon.id)}
-                      className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-4 py-3 text-sm font-black"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-[#6A4CFF] px-4 py-3 text-xs font-black md:text-sm"
                     >
                       <Eye size={15} />
                       Catalogs
@@ -304,7 +305,7 @@ export default function AddonsPage() {
 
                     <button
                       onClick={() => checkHealth(addon.id)}
-                      className="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-black"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-xs font-black md:text-sm"
                     >
                       <Activity size={15} />
                       Health
@@ -312,7 +313,7 @@ export default function AddonsPage() {
 
                     <button
                       onClick={() => toggleAddon(addon.id)}
-                      className="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-black"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-xs font-black md:text-sm"
                     >
                       <Power size={15} />
                       Toggle
@@ -320,7 +321,7 @@ export default function AddonsPage() {
 
                     <button
                       onClick={() => removeAddon(addon.id)}
-                      className="flex items-center gap-2 rounded-2xl bg-red-500/20 px-4 py-3 text-sm font-black text-red-100"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-red-500/20 px-4 py-3 text-xs font-black text-red-100 md:text-sm"
                     >
                       <Trash2 size={15} />
                       Delete
@@ -334,12 +335,14 @@ export default function AddonsPage() {
       </section>
 
       {catalogView && (
-        <section className="mt-10 rounded-[2rem] border border-[#6A4CFF]/30 bg-[#6A4CFF]/10 p-6">
+        <section className="mt-10 rounded-[2rem] border border-[#6A4CFF]/30 bg-[#6A4CFF]/10 p-5 md:p-6">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-3xl font-black">Catalog Browser</h2>
+            <div className="min-w-0">
+              <h2 className="text-2xl font-black md:text-3xl">
+                Catalog Browser
+              </h2>
 
-              <p className="mt-2 text-white/60">
+              <p className="mt-2 break-words text-white/60">
                 {catalogView.addon?.name} • {catalogView.catalogs?.length || 0} catalogs
               </p>
             </div>
@@ -367,7 +370,7 @@ export default function AddonsPage() {
 
                 <h3 className="text-xl font-black">{catalog.name}</h3>
 
-                <div className="mt-2 text-sm text-white/50">
+                <div className="mt-2 break-all text-sm text-white/50">
                   ID: {catalog.id}
                 </div>
 
@@ -383,8 +386,8 @@ export default function AddonsPage() {
         </section>
       )}
 
-      <section className="mt-10 rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-6">
-        <h2 className="mb-5 text-3xl font-black">
+      <section className="mt-10 rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-5 md:p-6">
+        <h2 className="mb-5 text-2xl font-black md:text-3xl">
           Meta Tester
         </h2>
 
@@ -399,15 +402,14 @@ export default function AddonsPage() {
           <input
             value={testMetaId}
             onChange={(e) => setTestMetaId(e.target.value)}
-            placeholder="tt0468569"
+            placeholder="streamverse:19"
             className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
           />
 
           <button
             onClick={() => {
-              if (addons[0]) {
-                openMeta(addons[0].id);
-              }
+              const localAddon = addons.find((addon) => addon.name === 'StreamVerse Local') || addons[0];
+              if (localAddon) openMeta(localAddon.id);
             }}
             className="rounded-2xl bg-[#00E0A8] px-6 py-4 font-black text-black"
           >
@@ -417,11 +419,14 @@ export default function AddonsPage() {
       </section>
 
       {catalogItems && (
-        <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/5 p-6">
+        <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/5 p-5 md:p-6">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-3xl font-black">Catalog Items</h2>
-              <p className="mt-2 text-white/60">
+            <div className="min-w-0">
+              <h2 className="text-2xl font-black md:text-3xl">
+                Catalog Items
+              </h2>
+
+              <p className="mt-2 break-words text-white/60">
                 {catalogItems.addon?.name} • {(catalogItems.metas || []).length} items
               </p>
             </div>
@@ -466,11 +471,14 @@ export default function AddonsPage() {
       )}
 
       {metaView && (
-        <section className="mt-10 rounded-[2rem] border border-[#6A4CFF]/20 bg-[#6A4CFF]/10 p-6">
+        <section className="mt-10 overflow-hidden rounded-[2rem] border border-[#6A4CFF]/20 bg-[#6A4CFF]/10 p-4 md:p-6">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-3xl font-black">Meta Result</h2>
-              <p className="mt-2 text-white/60">
+            <div className="min-w-0">
+              <h2 className="text-2xl font-black md:text-3xl">
+                Meta Result
+              </h2>
+
+              <p className="mt-2 break-words text-white/60">
                 {metaView.addon?.name} • {metaView.meta?.id}
               </p>
             </div>
@@ -483,23 +491,27 @@ export default function AddonsPage() {
             </button>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-[220px_1fr]">
-            {metaView.meta?.poster ? (
-              <img
-                src={metaView.meta.poster}
-                alt={metaView.meta.name}
-                className="w-full rounded-[1.5rem]"
-              />
-            ) : (
-              <div className="flex h-80 items-center justify-center rounded-[1.5rem] bg-black/40 text-white/40">
-                No poster
-              </div>
-            )}
+          <div className="grid gap-6 md:grid-cols-[260px_1fr]">
+            <div className="flex justify-center md:block">
+              {metaView.meta?.poster ? (
+                <img
+                  src={metaView.meta.poster}
+                  alt={metaView.meta.name}
+                  className="h-auto max-h-[420px] w-full max-w-[220px] rounded-[1.5rem] object-cover"
+                />
+              ) : (
+                <div className="flex h-[320px] w-full max-w-[220px] items-center justify-center rounded-[1.5rem] bg-black/40 text-white/40">
+                  No poster
+                </div>
+              )}
+            </div>
 
-            <div>
-              <h3 className="text-4xl font-black">{metaView.meta?.name}</h3>
+            <div className="min-w-0">
+              <h3 className="text-3xl font-black md:text-4xl">
+                {metaView.meta?.name}
+              </h3>
 
-              <p className="mt-4 text-white/60">
+              <p className="mt-4 break-words text-white/70">
                 {metaView.meta?.description || 'No description'}
               </p>
 
