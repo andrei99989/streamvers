@@ -1,8 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { apiDelete, apiFetch, apiPost, apiPatch } from '../../lib/apiClient';
-import { Activity, Boxes, Download, Power, Trash2 } from 'lucide-react';
+import { apiDelete, apiFetch, apiPatch, apiPost } from '../../lib/apiClient';
+import {
+  Activity,
+  Boxes,
+  Download,
+  Eye,
+  FileJson,
+  Power,
+  RefreshCcw,
+  Search,
+  Trash2,
+} from 'lucide-react';
 
 export default function AddonsPage() {
   const [addons, setAddons] = useState<any[]>([]);
@@ -10,11 +20,15 @@ export default function AddonsPage() {
 
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [manifestUrl, setManifestUrl] = useState('http://localhost:4000/stremio-addon/manifest.json');
 
-  const [manifestUrl, setManifestUrl] = useState('');
   const [message, setMessage] = useState('');
   const [catalogView, setCatalogView] = useState<any>(null);
   const [catalogItems, setCatalogItems] = useState<any>(null);
+  const [metaView, setMetaView] = useState<any>(null);
+
+  const [testType, setTestType] = useState('movie');
+  const [testMetaId, setTestMetaId] = useState('tt0468569');
 
   function showMessage(text: string) {
     setMessage(text);
@@ -40,15 +54,10 @@ export default function AddonsPage() {
     if (!name.trim()) return;
 
     try {
-      const created = await apiPost('/addons', {
-        name,
-        url,
-      });
-
+      const created = await apiPost('/addons', { name, url });
       setAddons([created, ...addons]);
       setName('');
       setUrl('');
-
       showMessage('✅ Addon creat');
     } catch {
       showMessage('❌ Eroare creare addon');
@@ -59,13 +68,8 @@ export default function AddonsPage() {
     if (!manifestUrl.trim()) return;
 
     try {
-      const created = await apiPost('/addons/install', {
-        manifestUrl,
-      });
-
+      const created = await apiPost('/addons/install', { manifestUrl });
       setAddons([created, ...addons]);
-      setManifestUrl('');
-
       showMessage('✅ Manifest instalat');
     } catch {
       showMessage('❌ Manifest invalid');
@@ -75,45 +79,16 @@ export default function AddonsPage() {
   async function toggleAddon(id: number) {
     try {
       const updated = await apiPatch(`/addons/${id}/toggle`, {});
-
-      setAddons(
-        addons.map((addon) =>
-          addon.id === id ? updated : addon
-        )
-      );
-
+      setAddons(addons.map((addon) => (addon.id === id ? updated : addon)));
       showMessage('✅ Status actualizat');
     } catch {
       showMessage('❌ Toggle eșuat');
     }
   }
 
-  async function openCatalog(type: string, catalogId: string) {
-    if (!catalogView?.addon?.id) return;
-
-    try {
-      const data = await apiFetch(`/addons/${catalogView.addon.id}/catalog/${type}/${catalogId}`);
-      setCatalogItems(data);
-      showMessage('✅ Catalog deschis');
-    } catch {
-      showMessage('❌ Nu am putut deschide catalogul');
-    }
-  }
-
-  async function loadCatalogs(id: number) {
-    try {
-      const data = await apiFetch(`/addons/${id}/catalogs`);
-      setCatalogView(data);
-      showMessage('✅ Cataloage încărcate');
-    } catch {
-      showMessage('❌ Nu am putut încărca cataloagele');
-    }
-  }
-
   async function checkHealth(id: number) {
     try {
       const result = await apiPost(`/addons/${id}/health`, {});
-
       setAddons(
         addons.map((addon) =>
           addon.id === id
@@ -123,24 +98,57 @@ export default function AddonsPage() {
                   ...(addon.metadata || {}),
                   health: result,
                 },
-                last_checked_at: new Date().toISOString(),
               }
             : addon
         )
       );
-
       showMessage(result.ok ? '✅ Addon sănătos' : '⚠️ Addon are probleme');
     } catch {
       showMessage('❌ Health check eșuat');
     }
   }
 
+  async function loadCatalogs(id: number) {
+    try {
+      const data = await apiFetch(`/addons/${id}/catalogs`);
+      setCatalogView(data);
+      setCatalogItems(null);
+      setMetaView(null);
+      showMessage('✅ Cataloage încărcate');
+    } catch {
+      showMessage('❌ Nu am putut încărca cataloagele');
+    }
+  }
+
+  async function openCatalog(type: string, catalogId: string) {
+    if (!catalogView?.addon?.id) return;
+
+    try {
+      const data = await apiFetch(`/addons/${catalogView.addon.id}/catalog/${type}/${catalogId}`);
+      setCatalogItems(data);
+      setMetaView(null);
+      showMessage('✅ Catalog deschis');
+    } catch {
+      showMessage('❌ Nu am putut deschide catalogul');
+    }
+  }
+
+  async function openMeta(addonId: number, type = testType, metaId = testMetaId) {
+    if (!metaId.trim()) return;
+
+    try {
+      const data = await apiFetch(`/addons/${addonId}/meta/${type}/${metaId}`);
+      setMetaView(data);
+      showMessage('✅ Meta încărcat');
+    } catch {
+      showMessage('❌ Meta fetch eșuat');
+    }
+  }
+
   async function removeAddon(id: number) {
     try {
       await apiDelete(`/addons/${id}`);
-
       setAddons(addons.filter((x) => x.id !== id));
-
       showMessage('✅ Addon șters');
     } catch {
       showMessage('❌ Delete eșuat');
@@ -163,16 +171,14 @@ export default function AddonsPage() {
         <div>
           <h1 className="text-5xl font-black">Addons</h1>
           <p className="mt-2 text-white/60">
-            StreamVerse addon ecosystem
+            Install, test and browse Stremio-like addon manifests.
           </p>
         </div>
       </div>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-          <h2 className="mb-5 text-2xl font-black">
-            Create Addon
-          </h2>
+          <h2 className="mb-5 text-2xl font-black">Create Addon</h2>
 
           <div className="space-y-4">
             <input
@@ -198,16 +204,14 @@ export default function AddonsPage() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-          <h2 className="mb-5 text-2xl font-black">
-            Install Manifest
-          </h2>
+        <div className="rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-6">
+          <h2 className="mb-5 text-2xl font-black">Install Manifest</h2>
 
           <div className="space-y-4">
             <input
               value={manifestUrl}
               onChange={(e) => setManifestUrl(e.target.value)}
-              placeholder="https://addon.com/manifest.json"
+              placeholder="http://localhost:4000/stremio-addon/manifest.json"
               className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
             />
 
@@ -222,18 +226,128 @@ export default function AddonsPage() {
         </div>
       </section>
 
+      <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/5 p-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-black">Installed Addons</h2>
+            <p className="mt-2 text-white/60">
+              {loading ? 'Loading...' : `${addons.length} addons installed`}
+            </p>
+          </div>
+
+          <button
+            onClick={loadAddons}
+            className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-bold"
+          >
+            <RefreshCcw size={16} />
+            Refresh
+          </button>
+        </div>
+
+        <div className="grid gap-5">
+          {addons.map((addon) => {
+            const health = addon.metadata?.health;
+
+            return (
+              <div
+                key={addon.id}
+                className="rounded-[1.5rem] border border-white/10 bg-black/30 p-5"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-2xl font-black">{addon.name}</h3>
+
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase text-white/60">
+                        {addon.version || 'v?'}
+                      </span>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-black uppercase ${
+                          addon.status === 'enabled'
+                            ? 'bg-[#00E0A8]/20 text-[#00E0A8]'
+                            : 'bg-red-500/20 text-red-200'
+                        }`}
+                      >
+                        {addon.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 break-all text-sm text-white/50">
+                      {addon.url || 'No manifest URL'}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/50">
+                      <span>{addon.manifest?.resources?.length || 0} resources</span>
+                      <span>•</span>
+                      <span>{addon.manifest?.catalogs?.length || 0} catalogs</span>
+                      <span>•</span>
+                      <span>{addon.manifest?.types?.join(', ') || 'no types'}</span>
+                      {health && (
+                        <>
+                          <span>•</span>
+                          <span>{health.ok ? 'healthy' : 'unhealthy'}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => loadCatalogs(addon.id)}
+                      className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-4 py-3 text-sm font-black"
+                    >
+                      <Eye size={15} />
+                      Catalogs
+                    </button>
+
+                    <button
+                      onClick={() => checkHealth(addon.id)}
+                      className="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-black"
+                    >
+                      <Activity size={15} />
+                      Health
+                    </button>
+
+                    <button
+                      onClick={() => toggleAddon(addon.id)}
+                      className="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-black"
+                    >
+                      <Power size={15} />
+                      Toggle
+                    </button>
+
+                    <button
+                      onClick={() => removeAddon(addon.id)}
+                      className="flex items-center gap-2 rounded-2xl bg-red-500/20 px-4 py-3 text-sm font-black text-red-100"
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {catalogView && (
         <section className="mt-10 rounded-[2rem] border border-[#6A4CFF]/30 bg-[#6A4CFF]/10 p-6">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-3xl font-black">Catalog Browser</h2>
+
               <p className="mt-2 text-white/60">
                 {catalogView.addon?.name} • {catalogView.catalogs?.length || 0} catalogs
               </p>
             </div>
 
             <button
-              onClick={() => setCatalogView(null)}
+              onClick={() => {
+                setCatalogView(null);
+                setCatalogItems(null);
+              }}
               className="rounded-2xl bg-white/10 px-5 py-3 font-bold"
             >
               Close
@@ -256,20 +370,11 @@ export default function AddonsPage() {
                   ID: {catalog.id}
                 </div>
 
-                <div className="mt-3 text-xs text-white/50">
-                  Genres: {(catalog.genres || []).slice(0, 6).join(', ') || 'N/A'}
-                  {(catalog.genres || []).length > 6 ? '...' : ''}
-                </div>
-
-                <div className="mt-3 text-xs text-white/50">
-                  Extra: {(catalog.extraSupported || []).join(', ') || 'N/A'}
-                </div>
-
                 <button
                   onClick={() => openCatalog(catalog.type, catalog.id)}
                   className="mt-4 rounded-2xl bg-[#6A4CFF] px-5 py-3 text-sm font-black"
                 >
-                  Open
+                  Open Catalog
                 </button>
               </div>
             ))}
@@ -277,7 +382,40 @@ export default function AddonsPage() {
         </section>
       )}
 
-{catalogItems && (
+      <section className="mt-10 rounded-[2rem] border border-[#00E0A8]/20 bg-[#00E0A8]/10 p-6">
+        <h2 className="mb-5 text-3xl font-black">
+          Meta Tester
+        </h2>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <input
+            value={testType}
+            onChange={(e) => setTestType(e.target.value)}
+            placeholder="movie"
+            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+          />
+
+          <input
+            value={testMetaId}
+            onChange={(e) => setTestMetaId(e.target.value)}
+            placeholder="tt0468569"
+            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+          />
+
+          <button
+            onClick={() => {
+              if (addons[0]) {
+                openMeta(addons[0].id);
+              }
+            }}
+            className="rounded-2xl bg-[#00E0A8] px-6 py-4 font-black text-black"
+          >
+            Fetch Meta
+          </button>
+        </div>
+      </section>
+
+      {catalogItems && (
         <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/5 p-6">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
@@ -296,14 +434,18 @@ export default function AddonsPage() {
           </div>
 
           <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-5">
-            {(catalogItems.metas || []).map((item: any) => (
-              <a
-                key={item.id}
-                href={`/title/imdb/${item.id}`}
-                className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/30"
+            {(catalogItems.metas || []).map((item: any, index: number) => (
+              <button
+                key={`${item.id}-${index}`}
+                onClick={() => openMeta(catalogItems.addon?.id, item.type || 'movie', item.id)}
+                className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/30 text-left transition hover:border-[#6A4CFF]"
               >
                 {item.poster ? (
-                  <img src={item.poster} alt={item.name} className="h-72 w-full object-cover" />
+                  <img
+                    src={item.poster}
+                    alt={item.name}
+                    className="h-72 w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-72 items-center justify-center bg-white/5 text-white/40">
                     No poster
@@ -313,116 +455,60 @@ export default function AddonsPage() {
                 <div className="p-4">
                   <h3 className="line-clamp-2 font-black">{item.name}</h3>
                   <p className="mt-2 text-xs text-white/50">
-                    {item.releaseInfo || 'N/A'}
+                    {item.releaseInfo || item.type || 'N/A'}
                   </p>
                 </div>
-              </a>
+              </button>
             ))}
           </div>
         </section>
       )}
 
-      <section className="mt-10">
-        <h2 className="mb-5 text-3xl font-black">
-          Installed Addons
-        </h2>
+      {metaView && (
+        <section className="mt-10 rounded-[2rem] border border-[#6A4CFF]/20 bg-[#6A4CFF]/10 p-6">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-black">Meta Result</h2>
+              <p className="mt-2 text-white/60">
+                {metaView.addon?.name} • {metaView.meta?.id}
+              </p>
+            </div>
 
-        {loading ? (
-          <div className="text-white/50">Loading addons...</div>
-        ) : addons.length === 0 ? (
-          <div className="rounded-[2rem] border border-dashed border-white/10 p-10 text-center text-white/50">
-            No addons installed
+            <button
+              onClick={() => setMetaView(null)}
+              className="rounded-2xl bg-white/10 px-5 py-3 font-bold"
+            >
+              Close
+            </button>
           </div>
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {addons.map((addon) => (
-              <div
-                key={addon.id}
-                className="rounded-[2rem] border border-white/10 bg-white/5 p-6"
-              >
-                <div className="mb-4 flex items-start justify-between">
-                  <div>
-                    <h3 className="text-2xl font-black">
-                      {addon.name}
-                    </h3>
 
-                    <div className="mt-2 text-sm text-white/50">
-                      {addon.version || 'v1.0.0'}
-                    </div>
-                  </div>
-
-                  <div
-                    className={`rounded-full px-3 py-1 text-xs font-black ${
-                      addon.status === 'enabled'
-                        ? 'bg-[#00E0A8]/20 text-[#00E0A8]'
-                        : 'bg-red-500/20 text-red-300'
-                    }`}
-                  >
-                    {addon.status}
-                  </div>
-                </div>
-
-                <div className="line-clamp-2 break-all text-sm text-white/50">
-                  {addon.url || 'Local addon'}
-                </div>
-
-                {addon.manifest && Object.keys(addon.manifest).length > 0 && (
-                  <div className="mt-4 rounded-2xl border border-[#6A4CFF]/30 bg-[#6A4CFF]/10 p-4 text-xs text-white/70">
-                    <div className="mb-2 font-black text-white">Manifest Info</div>
-
-                    <div>Resources: {(addon.manifest.resources || []).join(', ') || 'N/A'}</div>
-                    <div>Types: {(addon.manifest.types || []).join(', ') || 'N/A'}</div>
-                    <div>Catalogs: {(addon.manifest.catalogs || []).length}</div>
-                    <div>ID Prefixes: {(addon.manifest.idPrefixes || []).join(', ') || 'N/A'}</div>
-                  </div>
-                )}
-
-                {addon.metadata?.health && (
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4 text-xs text-white/60">
-                    <div className="font-black text-white">Health</div>
-                    <div>OK: {String(addon.metadata.health.ok)}</div>
-                    <div>Status: {addon.metadata.health.status || addon.metadata.health.error || 'N/A'}</div>
-                    <div>Latency: {addon.metadata.health.latencyMs || 0}ms</div>
-                  </div>
-                )}
-
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={() => loadCatalogs(addon.id)}
-                    className="flex items-center gap-2 rounded-2xl bg-[#6A4CFF]/30 px-5 py-3 font-bold text-[#B8A7FF]"
-                  >
-                    Catalogs
-                  </button>
-
-                  <button
-                    onClick={() => checkHealth(addon.id)}
-                    className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-bold"
-                  >
-                    <Activity size={16} />
-                    Health
-                  </button>
-
-                  <button
-                    onClick={() => toggleAddon(addon.id)}
-                    className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-bold"
-                  >
-                    <Power size={16} />
-                    Toggle
-                  </button>
-
-                  <button
-                    onClick={() => removeAddon(addon.id)}
-                    className="flex items-center gap-2 rounded-2xl bg-red-500/20 px-5 py-3 font-bold text-red-300"
-                  >
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
-                </div>
+          <div className="grid gap-6 md:grid-cols-[220px_1fr]">
+            {metaView.meta?.poster ? (
+              <img
+                src={metaView.meta.poster}
+                alt={metaView.meta.name}
+                className="w-full rounded-[1.5rem]"
+              />
+            ) : (
+              <div className="flex h-80 items-center justify-center rounded-[1.5rem] bg-black/40 text-white/40">
+                No poster
               </div>
-            ))}
+            )}
+
+            <div>
+              <h3 className="text-4xl font-black">{metaView.meta?.name}</h3>
+
+              <p className="mt-4 text-white/60">
+                {metaView.meta?.description || 'No description'}
+              </p>
+
+              <pre className="mt-6 max-h-96 overflow-auto rounded-2xl bg-black/50 p-4 text-xs text-white/60">
+                {JSON.stringify(metaView.meta, null, 2)}
+              </pre>
+            </div>
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </main>
   );
 }

@@ -14,6 +14,7 @@ async function ensureAddons() {
       status TEXT DEFAULT 'enabled',
       manifest JSONB DEFAULT '{}'::jsonb,
       permissions JSONB DEFAULT '[]'::jsonb,
+      metadata JSONB DEFAULT '{}'::jsonb,
       last_checked_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -25,8 +26,58 @@ async function ensureAddons() {
   await query(`ALTER TABLE addons ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'enabled'`);
   await query(`ALTER TABLE addons ADD COLUMN IF NOT EXISTS manifest JSONB DEFAULT '{}'::jsonb`);
   await query(`ALTER TABLE addons ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb`);
+  await query(`ALTER TABLE addons ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb`);
   await query(`ALTER TABLE addons ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ`);
   await query(`ALTER TABLE addons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`);
+}
+
+function normalizeManifestUrl(url = '') {
+  const value = String(url || '').trim();
+  if (!value) return '';
+  if (value.endsWith('/manifest')) return `${value}.json`;
+  if (value.endsWith('/manifest.json')) return value;
+  return `${value.replace(/\/$/, '')}/manifest.json`;
+}
+
+function addonBaseUrl(url = '') {
+  return normalizeManifestUrl(url).replace(/\/manifest\.json$/, '');
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url);
+  const text = await response.text();
+
+  if (!response.ok) {
+    const error = new Error(`Fetch failed ${response.status}`);
+    error.status = response.status;
+    error.details = text;
+    throw error;
+  }
+
+  return JSON.parse(text || '{}');
+}
+
+async function getAddon(id) {
+  await ensureAddons();
+
+  const found = await query('SELECT * FROM addons WHERE id = $1', [id]);
+  return found.rows[0] || null;
+}
+
+function addonPublic(addon) {
+  return {
+    id: addon.id,
+    name: addon.name,
+    version: addon.version,
+    status: addon.status,
+    url: addon.url,
+    type: addon.type,
+    manifest: addon.manifest || {},
+    metadata: addon.metadata || {},
+    lastCheckedAt: addon.last_checked_at,
+    createdAt: addon.created_at,
+    updatedAt: addon.updated_at,
+  };
 }
 
 router.get('/', async (_req, res) => {
@@ -38,7 +89,7 @@ router.get('/', async (_req, res) => {
     ORDER BY created_at DESC
   `);
 
-  res.json({ items: result.rows });
+  res.json({ items: result.rows.map(addonPublic) });
 });
 
 router.post('/', async (req, res) => {
@@ -63,138 +114,10 @@ router.post('/', async (req, res) => {
     VALUES ($1,$2,$3,$4,$5,$6,'enabled',NOW())
     RETURNING *
     `,
-    [name.trim(), url, version, type, manifest, permissions]
+    [name.trim(), normalizeManifestUrl(url), version, type, manifest, permissions]
   );
 
-  res.status(201).json(result.rows[0]);
-});
-
-
-
-
-router.get('/:id/meta/:type/:metaId', async (req, res) => {
-  await ensureAddons();
-
-  const found = await query('SELECT * FROM addons WHERE id = $1', [req.params.id]);
-  const addon = found.rows[0];
-
-  if (!addon) {
-    return res.status(404).json({ error: 'Addon not found' });
-  }
-
-  if (!addon.url) {
-    return res.status(400).json({ error: 'Addon URL missing' });
-  }
-
-  const baseUrl = addon.url.replace(/\/manifest\.json$/, '');
-  const metaUrl = `${baseUrl}/meta/${encodeURIComponent(req.params.type)}/${encodeURIComponent(req.params.metaId)}.json`;
-
-  const response = await fetch(metaUrl);
-
-  if (!response.ok) {
-    return res.status(response.status).json({
-      error: 'Meta fetch failed',
-      status: response.status,
-      metaUrl,
-    });
-  }
-
-  const data = await response.json();
-
-  res.json({
-    addon: {
-      id: addon.id,
-      name: addon.name,
-      url: addon.url,
-    },
-    metaUrl,
-    meta: data.meta || data,
-  });
-});
-
-router.get('/:id/catalog/:type/:catalogId', async (req, res) => {
-  await ensureAddons();
-
-  const found = await query('SELECT * FROM addons WHERE id = $1', [req.params.id]);
-  const addon = found.rows[0];
-
-  if (!addon) {
-    return res.status(404).json({ error: 'Addon not found' });
-  }
-
-  if (!addon.url) {
-    return res.status(400).json({ error: 'Addon URL missing' });
-  }
-
-  const baseUrl = addon.url.replace(/\/manifest\.json$/, '');
-  const catalogUrl = `${baseUrl}/catalog/${encodeURIComponent(req.params.type)}/${encodeURIComponent(req.params.catalogId)}.json`;
-
-  const response = await fetch(catalogUrl);
-
-  if (!response.ok) {
-    return res.status(response.status).json({
-      error: 'Catalog fetch failed',
-      status: response.status,
-      catalogUrl,
-    });
-  }
-
-  const data = await response.json();
-
-  res.json({
-    addon: {
-      id: addon.id,
-      name: addon.name,
-      url: addon.url,
-    },
-    catalogUrl,
-    metas: data.metas || [],
-  });
-});
-
-router.get('/:id/catalogs', async (req, res) => {
-  await ensureAddons();
-
-  const found = await query('SELECT * FROM addons WHERE id = $1', [req.params.id]);
-  const addon = found.rows[0];
-
-  if (!addon) {
-    return res.status(404).json({ error: 'Addon not found' });
-  }
-
-  const catalogs = addon.manifest?.catalogs || [];
-
-  res.json({
-    addon: {
-      id: addon.id,
-      name: addon.name,
-      version: addon.version,
-      status: addon.status,
-      url: addon.url,
-    },
-    catalogs,
-  });
-});
-
-router.patch('/:id/toggle', async (req, res) => {
-  await ensureAddons();
-
-  const result = await query(
-    `
-    UPDATE addons
-    SET status = CASE WHEN status = 'enabled' THEN 'disabled' ELSE 'enabled' END,
-        updated_at = NOW()
-    WHERE id = $1
-    RETURNING *
-    `,
-    [req.params.id]
-  );
-
-  if (!result.rows[0]) {
-    return res.status(404).json({ error: 'Addon not found' });
-  }
-
-  res.json(result.rows[0]);
+  res.status(201).json(addonPublic(result.rows[0]));
 });
 
 router.post('/install', async (req, res) => {
@@ -206,14 +129,18 @@ router.post('/install', async (req, res) => {
     return res.status(400).json({ error: 'manifestUrl or manifest is required' });
   }
 
+  const normalizedUrl = normalizeManifestUrl(manifestUrl);
   let data = manifest;
 
-  if (!data && manifestUrl) {
-    const response = await fetch(manifestUrl);
-    if (!response.ok) {
-      return res.status(400).json({ error: 'Could not fetch manifest' });
+  if (!data && normalizedUrl) {
+    try {
+      data = await fetchJson(normalizedUrl);
+    } catch (error) {
+      return res.status(error.status || 400).json({
+        error: 'Could not fetch manifest',
+        details: error.details || error.message,
+      });
     }
-    data = await response.json();
   }
 
   const name = data?.name || data?.id || 'Unnamed Addon';
@@ -225,18 +152,141 @@ router.post('/install', async (req, res) => {
     VALUES ($1,$2,$3,'manifest',$4,$5,'enabled',NOW(),NOW())
     RETURNING *
     `,
-    [name, manifestUrl, version, data || {}, data?.permissions || []]
+    [name, normalizedUrl, version, data || {}, data?.permissions || []]
   );
 
-  res.status(201).json(result.rows[0]);
+  res.status(201).json(addonPublic(result.rows[0]));
 });
 
+router.get('/:id/catalogs', async (req, res) => {
+  const addon = await getAddon(req.params.id);
+
+  if (!addon) {
+    return res.status(404).json({ error: 'Addon not found' });
+  }
+
+  const catalogs = addon.manifest?.catalogs || [];
+
+  res.json({
+    addon: addonPublic(addon),
+    catalogs,
+  });
+});
+
+router.get('/:id/catalog/:type/:catalogId', async (req, res) => {
+  const addon = await getAddon(req.params.id);
+
+  if (!addon) {
+    return res.status(404).json({ error: 'Addon not found' });
+  }
+
+  if (!addon.url) {
+    return res.status(400).json({ error: 'Addon URL missing' });
+  }
+
+  try {
+    const catalogUrl = `${addonBaseUrl(addon.url)}/catalog/${encodeURIComponent(req.params.type)}/${encodeURIComponent(req.params.catalogId)}.json`;
+    const data = await fetchJson(catalogUrl);
+
+    res.json({
+      addon: addonPublic(addon),
+      catalogUrl,
+      metas: data.metas || [],
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: 'Catalog fetch failed',
+      details: error.details || error.message,
+    });
+  }
+});
+
+router.get('/:id/meta/:type/:metaId', async (req, res) => {
+  const addon = await getAddon(req.params.id);
+
+  if (!addon) {
+    return res.status(404).json({ error: 'Addon not found' });
+  }
+
+  if (!addon.url) {
+    return res.status(400).json({ error: 'Addon URL missing' });
+  }
+
+  try {
+    const metaUrl = `${addonBaseUrl(addon.url)}/meta/${encodeURIComponent(req.params.type)}/${encodeURIComponent(req.params.metaId)}.json`;
+    const data = await fetchJson(metaUrl);
+
+    res.json({
+      addon: addonPublic(addon),
+      metaUrl,
+      meta: data.meta || data,
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: 'Meta fetch failed',
+      details: error.details || error.message,
+    });
+  }
+});
+
+router.get('/:id/stream/:type/:metaId', async (req, res) => {
+  const addon = await getAddon(req.params.id);
+
+  if (!addon) {
+    return res.status(404).json({ error: 'Addon not found' });
+  }
+
+  if (!addon.url) {
+    return res.status(400).json({ error: 'Addon URL missing' });
+  }
+
+  try {
+    const streamUrl = `${addonBaseUrl(addon.url)}/stream/${encodeURIComponent(req.params.type)}/${encodeURIComponent(req.params.metaId)}.json`;
+    const data = await fetchJson(streamUrl);
+
+    res.json({
+      addon: addonPublic(addon),
+      streamUrl,
+      streams: data.streams || [],
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: 'Stream fetch failed',
+      details: error.details || error.message,
+    });
+  }
+});
+
+router.get('/:id/subtitles/:type/:metaId', async (req, res) => {
+  const addon = await getAddon(req.params.id);
+
+  if (!addon) {
+    return res.status(404).json({ error: 'Addon not found' });
+  }
+
+  if (!addon.url) {
+    return res.status(400).json({ error: 'Addon URL missing' });
+  }
+
+  try {
+    const subtitlesUrl = `${addonBaseUrl(addon.url)}/subtitles/${encodeURIComponent(req.params.type)}/${encodeURIComponent(req.params.metaId)}.json`;
+    const data = await fetchJson(subtitlesUrl);
+
+    res.json({
+      addon: addonPublic(addon),
+      subtitlesUrl,
+      subtitles: data.subtitles || [],
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({
+      error: 'Subtitles fetch failed',
+      details: error.details || error.message,
+    });
+  }
+});
 
 router.post('/:id/health', async (req, res) => {
-  await ensureAddons();
-
-  const found = await query('SELECT * FROM addons WHERE id = $1', [req.params.id]);
-  const addon = found.rows[0];
+  const addon = await getAddon(req.params.id);
 
   if (!addon) {
     return res.status(404).json({ error: 'Addon not found' });
@@ -247,29 +297,31 @@ router.post('/:id/health', async (req, res) => {
       ok: false,
       status: 'missing-url',
       message: 'Addon has no manifest URL',
-      addon,
+      addon: addonPublic(addon),
     });
   }
 
   try {
     const started = Date.now();
-    const response = await fetch(addon.url);
+    const data = await fetchJson(addon.url);
     const latencyMs = Date.now() - started;
 
     await query(
       `
       UPDATE addons
       SET last_checked_at = NOW(),
-          metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+          manifest = $2,
+          metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb,
           updated_at = NOW()
       WHERE id = $1
       `,
       [
         req.params.id,
+        data || {},
         JSON.stringify({
           health: {
-            ok: response.ok,
-            status: response.status,
+            ok: true,
+            status: 200,
             latencyMs,
             checkedAt: new Date().toISOString(),
           },
@@ -277,11 +329,7 @@ router.post('/:id/health', async (req, res) => {
       ]
     );
 
-    res.json({
-      ok: response.ok,
-      status: response.status,
-      latencyMs,
-    });
+    res.json({ ok: true, status: 200, latencyMs, manifest: data });
   } catch (error) {
     await query(
       `
@@ -303,11 +351,29 @@ router.post('/:id/health', async (req, res) => {
       ]
     );
 
-    res.json({
-      ok: false,
-      error: error.message || 'Health check failed',
-    });
+    res.json({ ok: false, error: error.message || 'Health check failed' });
   }
+});
+
+router.patch('/:id/toggle', async (req, res) => {
+  await ensureAddons();
+
+  const result = await query(
+    `
+    UPDATE addons
+    SET status = CASE WHEN status = 'enabled' THEN 'disabled' ELSE 'enabled' END,
+        updated_at = NOW()
+    WHERE id = $1
+    RETURNING *
+    `,
+    [req.params.id]
+  );
+
+  if (!result.rows[0]) {
+    return res.status(404).json({ error: 'Addon not found' });
+  }
+
+  res.json(addonPublic(result.rows[0]));
 });
 
 router.delete('/:id', async (req, res) => {
