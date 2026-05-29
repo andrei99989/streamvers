@@ -71,8 +71,9 @@ export default function AddonsPage() {
       const created = await apiPost('/addons/install', { manifestUrl });
       setAddons([created, ...addons]);
       showMessage('✅ Manifest instalat');
-    } catch {
-      showMessage('❌ Manifest invalid');
+    } catch (error: any) {
+      showMessage(`❌ Manifest invalid: ${error?.message || 'unknown error'}`);
+      console.error('Install manifest failed:', error);
     }
   }
 
