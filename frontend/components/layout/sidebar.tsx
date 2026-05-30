@@ -41,6 +41,7 @@ const sections = [
       ['▶️', 'Player', '/player'],
       ['🗄️', 'Sources', '/sources'],
       ['🧩', 'Addons', '/addons'],
+      ['🛒', 'Addon Marketplace', '/addons-marketplace'],
       ['📥', 'Downloads', '/downloads'],
     ],
   },

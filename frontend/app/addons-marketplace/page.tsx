@@ -62,6 +62,14 @@ const marketplaceAddons = [
   },
 ];
 
+
+const featuredAddons = [
+  'StreamVerse Local',
+  'Cinemeta',
+  'OpenSubtitles',
+  'TMDB',
+];
+
 const categories = [
   'All',
   'Official',
@@ -143,6 +151,13 @@ export default function AddonsMarketplacePage() {
             Caută, filtrează și instalează addons
             compatibile StreamVerse/Stremio-like.
           </p>
+
+          <a
+            href="/addons"
+            className="mt-4 inline-flex rounded-2xl bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/20"
+          >
+            Open Addons Manager
+          </a>
         </div>
       </div>
 
@@ -183,6 +198,55 @@ export default function AddonsMarketplacePage() {
           <div className="mt-2 text-4xl font-black">
             {filteredAddons.length}
           </div>
+        </div>
+      </section>
+
+
+      <section className="mb-8">
+        <div className="mb-4 flex items-center gap-2">
+          <Star className="text-yellow-400" size={22} />
+          <h2 className="text-2xl font-black">
+            Featured Addons
+          </h2>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {marketplaceAddons
+            .filter((addon) => featuredAddons.includes(addon.name))
+            .map((addon) => (
+              <div
+                key={`featured-${addon.name}`}
+                className="rounded-[2rem] border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-transparent p-5"
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <Star size={16} className="text-yellow-400" />
+                  <span className="text-xs font-black uppercase text-yellow-300">
+                    Featured
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-black">
+                  {addon.name}
+                </h3>
+
+                <p className="mt-2 text-sm text-white/60">
+                  {addon.description}
+                </p>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="text-xs text-white/40">
+                    {addon.category}
+                  </div>
+
+                  <button
+                    onClick={() => install(addon)}
+                    className="rounded-2xl bg-yellow-400 px-4 py-2 text-xs font-black text-black"
+                  >
+                    Install
+                  </button>
+                </div>
+              </div>
+            ))}
         </div>
       </section>
 

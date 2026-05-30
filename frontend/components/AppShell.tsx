@@ -43,6 +43,7 @@ const sections = [
     items: [
       ['/live-tv', 'Live TV', '◉'],
       ['/addons', 'Addons', '▣'],
+      ['/addons-marketplace', 'Marketplace', '🛒'],
       ['/upload', 'Upload', '＋'],
       ['/downloads', 'Downloads', '📥']
     ]
