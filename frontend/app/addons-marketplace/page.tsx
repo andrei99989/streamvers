@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Puzzle, ShieldCheck, Star } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  Download,
+  Filter,
+  Puzzle,
+  Search,
+  ShieldCheck,
+  Star,
+} from 'lucide-react';
 import { apiPost } from '../../lib/apiClient';
 
 const marketplaceAddons = [
@@ -55,8 +62,37 @@ const marketplaceAddons = [
   },
 ];
 
+const categories = [
+  'All',
+  'Official',
+  'Metadata',
+  'Streams',
+  'Subtitles',
+  'Discovery',
+];
+
 export default function AddonsMarketplacePage() {
   const [message, setMessage] = useState('');
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+
+  const filteredAddons = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    return marketplaceAddons.filter((addon) => {
+      const matchesCategory =
+        activeCategory === 'All' || addon.category === activeCategory;
+
+      const matchesSearch =
+        !q ||
+        addon.name.toLowerCase().includes(q) ||
+        addon.description.toLowerCase().includes(q) ||
+        addon.category.toLowerCase().includes(q) ||
+        addon.status.toLowerCase().includes(q);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [search, activeCategory]);
 
   function showMessage(text: string) {
     setMessage(text);
@@ -70,10 +106,15 @@ export default function AddonsMarketplacePage() {
     }
 
     try {
-      await apiPost('/addons/install', { manifestUrl: addon.manifestUrl });
+      await apiPost('/addons/install', {
+        manifestUrl: addon.manifestUrl,
+      });
+
       showMessage(`✅ ${addon.name} instalat`);
     } catch (error: any) {
-      showMessage(`❌ Install failed: ${error?.message || 'unknown'}`);
+      showMessage(
+        `❌ Install failed: ${error?.message || 'unknown'}`
+      );
     }
   }
 
@@ -87,44 +128,112 @@ export default function AddonsMarketplacePage() {
 
       <div className="mb-10 flex items-center gap-4">
         <div className="rounded-3xl bg-[#6A4CFF]/20 p-4">
-          <Puzzle className="text-[#B8A7FF]" size={34} />
+          <Puzzle
+            className="text-[#B8A7FF]"
+            size={34}
+          />
         </div>
 
         <div>
           <h1 className="text-4xl font-black md:text-5xl">
             Addon Marketplace
           </h1>
+
           <p className="mt-2 text-white/60">
-            Instalează rapid addons compatibile StreamVerse/Stremio-like.
+            Caută, filtrează și instalează addons
+            compatibile StreamVerse/Stremio-like.
           </p>
         </div>
       </div>
 
       <section className="mb-8 grid gap-4 md:grid-cols-3">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-          <div className="text-sm font-black uppercase text-white/40">Ready</div>
+          <div className="text-sm font-black uppercase text-white/40">
+            Ready
+          </div>
+
           <div className="mt-2 text-4xl font-black text-[#00E0A8]">
-            {marketplaceAddons.filter((addon) => addon.status === 'Ready').length}
+            {
+              marketplaceAddons.filter(
+                (addon) => addon.status === 'Ready'
+              ).length
+            }
           </div>
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-          <div className="text-sm font-black uppercase text-white/40">Integrated</div>
+          <div className="text-sm font-black uppercase text-white/40">
+            Integrated
+          </div>
+
           <div className="mt-2 text-4xl font-black text-[#B8A7FF]">
-            {marketplaceAddons.filter((addon) => addon.status === 'Integrated').length}
+            {
+              marketplaceAddons.filter(
+                (addon) => addon.status === 'Integrated'
+              ).length
+            }
           </div>
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-          <div className="text-sm font-black uppercase text-white/40">Coming Next</div>
+          <div className="text-sm font-black uppercase text-white/40">
+            Visible
+          </div>
+
           <div className="mt-2 text-4xl font-black">
-            {marketplaceAddons.filter((addon) => addon.status === 'Placeholder').length}
+            {filteredAddons.length}
           </div>
         </div>
       </section>
 
+      <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Search size={18} />
+          <span className="font-black">
+            Search & Filters
+          </span>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
+            />
+
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search addons..."
+              className="w-full rounded-2xl border border-white/10 bg-black/40 py-4 pl-12 pr-5 outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 rounded-2xl bg-black/40 px-4 py-3 text-white/60">
+            <Filter size={16} />
+            {activeCategory}
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`rounded-full px-4 py-2 text-sm font-black ${
+                activeCategory === category
+                  ? 'bg-[#00E0A8] text-black'
+                  : 'bg-white/10 text-white/70'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {marketplaceAddons.map((addon) => (
+        {filteredAddons.map((addon) => (
           <div
             key={addon.name}
             className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 transition hover:border-[#6A4CFF]"
