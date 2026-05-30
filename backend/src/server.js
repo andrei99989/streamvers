@@ -54,25 +54,54 @@ app.use(express.json({ limit: '2mb' }));
 app.use(rateLimit({ windowMs: 60_000, limit: 180 }));
 
 
+
 app.get('/addons-marketplace', async (_req, res) => {
   try {
     const file = new URL('../config/addons-marketplace.json', import.meta.url);
     const text = await fs.readFile(file, 'utf8');
     const items = JSON.parse(text || '[]');
 
+    const categories = [
+      'All',
+      ...Array.from(new Set(items.map((item) => item.category).filter(Boolean))),
+    ];
+
+    const featured = items.filter((item) => item.featured);
+
+    const stats = {
+      ready: items.filter((item) => item.status === 'Ready').length,
+      integrated: items.filter((item) => item.status === 'Integrated').length,
+      placeholder: items.filter((item) => item.status === 'Placeholder').length,
+    };
+
     res.json({
+      ok: true,
       items,
       total: items.length,
+      categories,
+      featured,
+      stats,
       source: 'backend/config/addons-marketplace.json',
+      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
     res.status(500).json({
+      ok: false,
       error: 'Marketplace config failed',
       details: error.message,
       items: [],
+      total: 0,
+      categories: ['All'],
+      featured: [],
+      stats: {
+        ready: 0,
+        integrated: 0,
+        placeholder: 0,
+      },
     });
   }
 });
+
 
 app.get('/health', (_req, res) => {
   res.json({
