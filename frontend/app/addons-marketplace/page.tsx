@@ -82,6 +82,9 @@ const categories = [
 
 export default function AddonsMarketplacePage() {
   const [marketplace, setMarketplace] = useState<any[]>(marketplaceAddons);
+  const [apiCategories, setApiCategories] = useState<string[]>([]);
+  const [apiFeatured, setApiFeatured] = useState<any[]>([]);
+  const [apiStats, setApiStats] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [lastInstalled, setLastInstalled] = useState('');
   const [search, setSearch] = useState('');
@@ -108,9 +111,29 @@ export default function AddonsMarketplacePage() {
 
   useEffect(() => {
     apiFetch('/addons-marketplace')
-      .then((data) => setMarketplace(data.items || marketplaceAddons))
+      .then((data) => {
+        setMarketplace(data.items || marketplaceAddons);
+        setApiCategories(data.categories || []);
+        setApiFeatured(data.featured || []);
+        setApiStats(data.stats || null);
+      })
       .catch(() => setMarketplace(marketplaceAddons));
   }, []);
+
+
+  const visibleCategories =
+    apiCategories.length > 0 ? apiCategories : categories;
+
+  const visibleFeatured =
+    apiFeatured.length > 0
+      ? apiFeatured
+      : marketplace.filter((addon) => featuredAddons.includes(addon.name));
+
+  const visibleStats = apiStats || {
+    ready: marketplace.filter((addon) => addon.status === 'Ready').length,
+    integrated: marketplace.filter((addon) => addon.status === 'Integrated').length,
+    placeholder: marketplace.filter((addon) => addon.status === 'Placeholder').length,
+  };
 
   function showMessage(text: string) {
     setMessage(text);
@@ -222,8 +245,7 @@ export default function AddonsMarketplacePage() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {marketplace
-            .filter((addon) => featuredAddons.includes(addon.name))
+          {visibleFeatured
             .map((addon) => (
               <div
                 key={`featured-${addon.name}`}
@@ -318,7 +340,7 @@ export default function AddonsMarketplacePage() {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {categories.map((category) => (
+          {visibleCategories.map((category) => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
