@@ -10,6 +10,7 @@ import {
   Star,
 } from 'lucide-react';
 import { apiPost } from '../../lib/apiClient';
+import Link from 'next/link';
 
 const marketplaceAddons = [
   {
@@ -81,6 +82,7 @@ const categories = [
 
 export default function AddonsMarketplacePage() {
   const [message, setMessage] = useState('');
+  const [lastInstalled, setLastInstalled] = useState('');
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -118,6 +120,7 @@ export default function AddonsMarketplacePage() {
         manifestUrl: addon.manifestUrl,
       });
 
+      setLastInstalled(addon.name);
       showMessage(`✅ ${addon.name} instalat`);
     } catch (error: any) {
       showMessage(
@@ -249,6 +252,33 @@ export default function AddonsMarketplacePage() {
             ))}
         </div>
       </section>
+
+      {lastInstalled && (
+        <section className="mb-8 rounded-[2rem] border border-[#00E0A8]/30 bg-[#00E0A8]/10 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-sm font-black uppercase text-[#00E0A8]">
+                Installed successfully
+              </div>
+
+              <h2 className="mt-1 text-2xl font-black">
+                {lastInstalled}
+              </h2>
+
+              <p className="mt-2 text-white/60">
+                Addon-ul a fost instalat. Îl poți verifica acum în Addons Manager.
+              </p>
+            </div>
+
+            <Link
+              href="/addons"
+              className="rounded-2xl bg-[#00E0A8] px-6 py-4 text-center font-black text-black"
+            >
+              Open Addons Manager
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
         <div className="mb-4 flex items-center gap-2">
