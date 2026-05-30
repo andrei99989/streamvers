@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Download,
   Filter,
@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   Star,
 } from 'lucide-react';
-import { apiPost } from '../../lib/apiClient';
+import { apiFetch, apiPost } from '../../lib/apiClient';
 import Link from 'next/link';
 
 const marketplaceAddons = [
@@ -81,6 +81,7 @@ const categories = [
 ];
 
 export default function AddonsMarketplacePage() {
+  const [marketplace, setMarketplace] = useState<any[]>(marketplaceAddons);
   const [message, setMessage] = useState('');
   const [lastInstalled, setLastInstalled] = useState('');
   const [search, setSearch] = useState('');
@@ -89,7 +90,7 @@ export default function AddonsMarketplacePage() {
   const filteredAddons = useMemo(() => {
     const q = search.trim().toLowerCase();
 
-    return marketplaceAddons.filter((addon) => {
+    return marketplace.filter((addon) => {
       const matchesCategory =
         activeCategory === 'All' || addon.category === activeCategory;
 
@@ -103,6 +104,13 @@ export default function AddonsMarketplacePage() {
       return matchesCategory && matchesSearch;
     });
   }, [search, activeCategory]);
+
+
+  useEffect(() => {
+    apiFetch('/addons-marketplace')
+      .then((data) => setMarketplace(data.items || marketplaceAddons))
+      .catch(() => setMarketplace(marketplaceAddons));
+  }, []);
 
   function showMessage(text: string) {
     setMessage(text);
@@ -172,7 +180,7 @@ export default function AddonsMarketplacePage() {
 
           <div className="mt-2 text-4xl font-black text-[#00E0A8]">
             {
-              marketplaceAddons.filter(
+              marketplace.filter(
                 (addon) => addon.status === 'Ready'
               ).length
             }
@@ -186,7 +194,7 @@ export default function AddonsMarketplacePage() {
 
           <div className="mt-2 text-4xl font-black text-[#B8A7FF]">
             {
-              marketplaceAddons.filter(
+              marketplace.filter(
                 (addon) => addon.status === 'Integrated'
               ).length
             }
@@ -214,7 +222,7 @@ export default function AddonsMarketplacePage() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {marketplaceAddons
+          {marketplace
             .filter((addon) => featuredAddons.includes(addon.name))
             .map((addon) => (
               <div

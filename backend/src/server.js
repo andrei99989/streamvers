@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -51,6 +52,27 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || '*', credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(rateLimit({ windowMs: 60_000, limit: 180 }));
+
+
+app.get('/addons-marketplace', async (_req, res) => {
+  try {
+    const file = new URL('../storage/addons-marketplace.json', import.meta.url);
+    const text = await fs.readFile(file, 'utf8');
+    const items = JSON.parse(text || '[]');
+
+    res.json({
+      items,
+      total: items.length,
+      source: 'backend/storage/addons-marketplace.json',
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Marketplace config failed',
+      details: error.message,
+      items: [],
+    });
+  }
+});
 
 app.get('/health', (_req, res) => {
   res.json({
