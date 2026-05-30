@@ -1,0 +1,29 @@
+[
+  {
+    "name": "StreamVerse Local",
+    "description": "Addon local StreamVerse cu catalogs, meta, streams și subtitles.",
+    "manifestUrl": "http://localhost:4000/stremio-addon/manifest.json",
+    "version": "1.0.0",
+    "category": "Official",
+    "status": "Ready",
+    "featured": true
+  },
+  {
+    "name": "Cinemeta",
+    "description": "Metadata oficial Stremio pentru filme și seriale.",
+    "manifestUrl": "https://v3-cinemeta.strem.io/manifest.json",
+    "version": "3.0.14",
+    "category": "Metadata",
+    "status": "Ready",
+    "featured": true
+  },
+  {
+    "name": "OpenSubtitles",
+    "description": "Subtitles provider pentru RO/EN și alte limbi.",
+    "manifestUrl": "",
+    "version": "API",
+    "category": "Subtitles",
+    "status": "Integrated",
+    "featured": true
+  }
+]

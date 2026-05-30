@@ -56,14 +56,14 @@ app.use(rateLimit({ windowMs: 60_000, limit: 180 }));
 
 app.get('/addons-marketplace', async (_req, res) => {
   try {
-    const file = new URL('../storage/addons-marketplace.json', import.meta.url);
+    const file = new URL('../config/addons-marketplace.json', import.meta.url);
     const text = await fs.readFile(file, 'utf8');
     const items = JSON.parse(text || '[]');
 
     res.json({
       items,
       total: items.length,
-      source: 'backend/storage/addons-marketplace.json',
+      source: 'backend/config/addons-marketplace.json',
     });
   } catch (error) {
     res.status(500).json({
