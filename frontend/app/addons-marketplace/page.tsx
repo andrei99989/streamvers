@@ -12,6 +12,14 @@ import {
 import { apiFetch, apiPost } from '../../lib/apiClient';
 import Link from 'next/link';
 
+function slugify(value: string) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 const marketplaceAddons = [
   {
     name: 'StreamVerse Local',
@@ -358,9 +366,10 @@ export default function AddonsMarketplacePage() {
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {filteredAddons.map((addon) => (
-          <div
+          <Link
             key={addon.name}
-            className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 transition hover:border-[#6A4CFF]"
+            href={`/addons-marketplace/${slugify(addon.name)}`}
+            className="block rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 transition hover:border-[#6A4CFF]"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -395,7 +404,7 @@ export default function AddonsMarketplacePage() {
             <div className="mt-4 break-all text-xs text-white/35">
               {addon.manifestUrl || 'Manifest URL not configured yet'}
             </div>
-          </div>
+          </Link>
         ))}
       </section>
     </main>
