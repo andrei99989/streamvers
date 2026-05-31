@@ -25,5 +25,50 @@
     "category": "Subtitles",
     "status": "Integrated",
     "featured": true
+  },
+  {
+    "name": "TMDB Metadata",
+    "description": "Metadata filme și seriale prin TheMovieDB API.",
+    "manifestUrl": "",
+    "version": "API",
+    "category": "Metadata",
+    "status": "Placeholder",
+    "featured": true
+  },
+  {
+    "name": "Trakt Discovery",
+    "description": "Trending, popular, watchlist și recomandări prin Trakt.",
+    "manifestUrl": "",
+    "version": "API",
+    "category": "Discovery",
+    "status": "Placeholder",
+    "featured": false
+  },
+  {
+    "name": "YouTube Sources",
+    "description": "Surse video YouTube pentru trailers, clips și conținut public.",
+    "manifestUrl": "",
+    "version": "API",
+    "category": "Streams",
+    "status": "Placeholder",
+    "featured": false
+  },
+  {
+    "name": "Live TV",
+    "description": "Addon pentru canale TV live și surse IPTV publice.",
+    "manifestUrl": "",
+    "version": "Beta",
+    "category": "Live TV",
+    "status": "Placeholder",
+    "featured": false
+  },
+  {
+    "name": "Sports Hub",
+    "description": "Addon pentru sport, scoruri, evenimente și metadata sportivă.",
+    "manifestUrl": "",
+    "version": "Beta",
+    "category": "Sports",
+    "status": "Placeholder",
+    "featured": false
   }
 ]
