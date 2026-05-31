@@ -22,6 +22,7 @@ export default function AddonDetailsPage({
 
   const [addons, setAddons] = useState<any[]>([]);
   const [message, setMessage] = useState('');
+  const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
     apiFetch('/addons-marketplace')
@@ -47,6 +48,7 @@ export default function AddonDetailsPage({
 
     try {
       await apiPost('/addons/install', { manifestUrl: addon.manifestUrl });
+      setInstalled(true);
       showMessage(`✅ ${addon.name} instalat`);
     } catch (error: any) {
       showMessage(`❌ Install failed: ${error?.message || 'unknown'}`);
@@ -81,6 +83,33 @@ export default function AddonDetailsPage({
         <ArrowLeft size={18} />
         Back to Marketplace
       </Link>
+
+      {installed && (
+        <section className="mb-8 rounded-[2rem] border border-[#00E0A8]/30 bg-[#00E0A8]/10 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-sm font-black uppercase text-[#00E0A8]">
+                Installed successfully
+              </div>
+
+              <h2 className="mt-1 text-2xl font-black">
+                {addon.name}
+              </h2>
+
+              <p className="mt-2 text-white/60">
+                Addon-ul a fost instalat. Îl poți testa acum în Addons Manager.
+              </p>
+            </div>
+
+            <Link
+              href="/addons"
+              className="rounded-2xl bg-[#00E0A8] px-6 py-4 text-center font-black text-black"
+            >
+              Open Addons Manager
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
