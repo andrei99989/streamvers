@@ -18,12 +18,12 @@
     "featured": true
   },
   {
-    "name": "OpenSubtitles",
+    "name": "OpenSubtitles v3",
     "description": "Subtitles provider pentru RO/EN și alte limbi.",
-    "manifestUrl": "",
-    "version": "API",
+    "manifestUrl": "https://opensubtitles-v3.strem.io/manifest.json",
+    "version": "1.0.0",
     "category": "Subtitles",
-    "status": "Integrated",
+    "status": "Ready",
     "featured": true
   },
   {
