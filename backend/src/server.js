@@ -55,6 +55,47 @@ app.use(rateLimit({ windowMs: 60_000, limit: 180 }));
 
 
 
+
+app.get('/addons-marketplace/manifest-preview', async (req, res) => {
+  try {
+    const manifestUrl = String(req.query.url || '').trim();
+
+    if (!manifestUrl) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Manifest URL is required',
+      });
+    }
+
+    const response = await fetch(manifestUrl);
+    const text = await response.text();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        ok: false,
+        error: 'Manifest fetch failed',
+        status: response.status,
+        details: text.slice(0, 500),
+      });
+    }
+
+    const manifest = JSON.parse(text || '{}');
+
+    res.json({
+      ok: true,
+      url: manifestUrl,
+      manifest,
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: 'Manifest preview failed',
+      details: error.message,
+    });
+  }
+});
+
+
 app.get('/addons-marketplace', async (_req, res) => {
   try {
     const file = new URL('../config/addons-marketplace.json', import.meta.url);

@@ -22,6 +22,8 @@ export default function AddonDetailsPage({
 
   const [addons, setAddons] = useState<any[]>([]);
   const [message, setMessage] = useState('');
+  const [manifestPreview, setManifestPreview] = useState<any>(null);
+  const [manifestLoading, setManifestLoading] = useState(false);
   const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
@@ -52,6 +54,29 @@ export default function AddonDetailsPage({
       showMessage(`✅ ${addon.name} instalat`);
     } catch (error: any) {
       showMessage(`❌ Install failed: ${error?.message || 'unknown'}`);
+    }
+  }
+
+
+  async function previewManifest() {
+    if (!addon?.manifestUrl) {
+      showMessage('⚠️ Manifest URL not configured');
+      return;
+    }
+
+    setManifestLoading(true);
+
+    try {
+      const data = await apiFetch(
+        `/addons-marketplace/manifest-preview?url=${encodeURIComponent(addon.manifestUrl)}`
+      );
+
+      setManifestPreview(data);
+      showMessage('✅ Manifest loaded');
+    } catch (error: any) {
+      showMessage(`❌ Preview failed: ${error?.message || 'unknown'}`);
+    } finally {
+      setManifestLoading(false);
     }
   }
 
@@ -158,16 +183,32 @@ export default function AddonDetailsPage({
             {addon.manifestUrl || 'Manifest URL not configured yet'}
           </div>
 
-          {addon.manifestUrl && (
-            <a
-              href={addon.manifestUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-black"
+          <div className="mt-4 flex flex-wrap gap-3">
+            {addon.manifestUrl && (
+              <a
+                href={addon.manifestUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-black"
+              >
+                <ExternalLink size={16} />
+                Open Manifest
+              </a>
+            )}
+
+            <button
+              onClick={previewManifest}
+              disabled={manifestLoading || !addon.manifestUrl}
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#6A4CFF] px-4 py-3 text-sm font-black disabled:opacity-50"
             >
-              <ExternalLink size={16} />
-              Open Manifest
-            </a>
+              {manifestLoading ? 'Loading...' : 'Preview Manifest'}
+            </button>
+          </div>
+
+          {manifestPreview && (
+            <pre className="mt-5 max-h-[420px] overflow-auto rounded-2xl bg-black/60 p-4 text-xs text-white/60">
+              {JSON.stringify(manifestPreview.manifest || manifestPreview, null, 2)}
+            </pre>
           )}
         </div>
       </section>
